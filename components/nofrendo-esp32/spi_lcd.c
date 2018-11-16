@@ -140,8 +140,8 @@ static void  ILI9341_INITIAL ()
     LCD_RST_SET();
     ets_delay_us(200000);
 
-	// Software Reset + delay 50ms
-	LCD_WriteCommand(ST7735_SWRESET);
+    // Software Reset + delay 50ms
+    LCD_WriteCommand(ST7735_SWRESET);
     ets_delay_us(200000);
     // Out of sleep mode + delay 500ms
     LCD_WriteCommand(ST7735_SLPOUT);
@@ -176,82 +176,82 @@ static void  ILI9341_INITIAL ()
     LCD_WriteCommand(ST7735_PWCTR2);
     LCD_WriteData(0xC5);
     // Power Control Opamp current small Boost frequency
-	LCD_WriteCommand(ST7735_PWCTR3);
-	LCD_WriteData(0x0A);
-	LCD_WriteData(0x00);
-	// Power Control BCLK/2, Opamp current small & Medium low
-	LCD_WriteCommand(ST7735_PWCTR4);
-	LCD_WriteData(0x8A);
-	LCD_WriteData(0x2A);
-	// Power Control
-	LCD_WriteCommand(ST7735_PWCTR5);
-	LCD_WriteData(0x8A);
-	LCD_WriteData(0xEE);
-	// Power Control
-	LCD_WriteCommand(ST7735_VMCTR1);
-	LCD_WriteData(0x0E);
-	// Don't invert display
-	LCD_WriteCommand(ST7735_INVOFF);
-	// Memory access control (directions) row addr/col addr, bottom to top refresh
-	LCD_WriteCommand(ST7735_MADCTL);
-	LCD_WriteData(MADCTL_MV | MADCTL_MX);
+    LCD_WriteCommand(ST7735_PWCTR3);
+    LCD_WriteData(0x0A);
+    LCD_WriteData(0x00);
+    // Power Control BCLK/2, Opamp current small & Medium low
+    LCD_WriteCommand(ST7735_PWCTR4);
+    LCD_WriteData(0x8A);
+    LCD_WriteData(0x2A);
+    // Power Control
+    LCD_WriteCommand(ST7735_PWCTR5);
+    LCD_WriteData(0x8A);
+    LCD_WriteData(0xEE);
+    // Power Control
+    LCD_WriteCommand(ST7735_VMCTR1);
+    LCD_WriteData(0x0E);
+    // Don't invert display
+    LCD_WriteCommand(ST7735_INVOFF);
+    // Memory access control (directions) row addr/col addr, bottom to top refresh
+    LCD_WriteCommand(ST7735_MADCTL);
+    LCD_WriteData(MADCTL_MV | MADCTL_MX);
     // Set Color mode 16 bit color
     LCD_WriteCommand(ST7735_COLMOD);
     LCD_WriteData(0x05);
     ets_delay_us(100000);
-	// Column addr set
+    // Column addr set
     LCD_WriteCommand(ST7735_CASET);
     LCD_WriteData(0x00);
     LCD_WriteData(0x02);
     LCD_WriteData(0x00);
     LCD_WriteData(0x81);
-	// Row addr set
+    // Row addr set
     LCD_WriteCommand(ST7735_RASET);
     LCD_WriteData(0x00);
     LCD_WriteData(0x01);
     LCD_WriteData(0x00);
     LCD_WriteData(0xA0);
     // Magical unicorn dust
-	LCD_WriteCommand(ST7735_GMCTRP1);
-	LCD_WriteData(0x02);
-	LCD_WriteData(0x1C);
-	LCD_WriteData(0x07);
-	LCD_WriteData(0x12);
-	LCD_WriteData(0x37);
-	LCD_WriteData(0x32);
-	LCD_WriteData(0x29);
-	LCD_WriteData(0x2D);
-	LCD_WriteData(0x29);
-	LCD_WriteData(0x25);
-	LCD_WriteData(0x2B);
-	LCD_WriteData(0x39);
-	LCD_WriteData(0x00);
-	LCD_WriteData(0x01);
-	LCD_WriteData(0x03);
-	LCD_WriteData(0x10);
-	// Sparkles and rainbows
-	LCD_WriteCommand(ST7735_GMCTRN1);
-	LCD_WriteData(0x03);
-	LCD_WriteData(0x1D);
-	LCD_WriteData(0x07);
-	LCD_WriteData(0x06);
-	LCD_WriteData(0x2C);
-	LCD_WriteData(0x2C);
-	LCD_WriteData(0x29);
-	LCD_WriteData(0x2D);
-	LCD_WriteData(0x2E);
-	LCD_WriteData(0x2E);
-	LCD_WriteData(0x37);
-	LCD_WriteData(0x3F);
-	LCD_WriteData(0x00);
-	LCD_WriteData(0x00);
-	LCD_WriteData(0x02);
-	LCD_WriteData(0x10);
+    LCD_WriteCommand(ST7735_GMCTRP1);
+    LCD_WriteData(0x02);
+    LCD_WriteData(0x1C);
+    LCD_WriteData(0x07);
+    LCD_WriteData(0x12);
+    LCD_WriteData(0x37);
+    LCD_WriteData(0x32);
+    LCD_WriteData(0x29);
+    LCD_WriteData(0x2D);
+    LCD_WriteData(0x29);
+    LCD_WriteData(0x25);
+    LCD_WriteData(0x2B);
+    LCD_WriteData(0x39);
+    LCD_WriteData(0x00);
+    LCD_WriteData(0x01);
+    LCD_WriteData(0x03);
+    LCD_WriteData(0x10);
+    // Sparkles and rainbows
+    LCD_WriteCommand(ST7735_GMCTRN1);
+    LCD_WriteData(0x03);
+    LCD_WriteData(0x1D);
+    LCD_WriteData(0x07);
+    LCD_WriteData(0x06);
+    LCD_WriteData(0x2C);
+    LCD_WriteData(0x2C);
+    LCD_WriteData(0x29);
+    LCD_WriteData(0x2D);
+    LCD_WriteData(0x2E);
+    LCD_WriteData(0x2E);
+    LCD_WriteData(0x37);
+    LCD_WriteData(0x3F);
+    LCD_WriteData(0x00);
+    LCD_WriteData(0x00);
+    LCD_WriteData(0x02);
+    LCD_WriteData(0x10);
     // Normal display on
-	LCD_WriteCommand(ST7735_NORON);
+    LCD_WriteCommand(ST7735_NORON);
     ets_delay_us(10000);
     // Main screen turn on
-	LCD_WriteCommand(ST7735_DISPON);
+    LCD_WriteCommand(ST7735_DISPON);
     ets_delay_us(100000);
 }
 //.............LCD API END----------
