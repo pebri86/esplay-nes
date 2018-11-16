@@ -20,18 +20,18 @@ for your reference, the code was tested against release/v3.1 branch of esp-idf.
 Display
 -------
 
-To display the NES output, please connect a 320x240 ili9341-based SPI display to the ESP32 in this way:
+To display the NES output, please connect a 160x128 1,8" ST7735R SPI display to the ESP32 in this way:
 
-    =====  =======================
-    Pin    GPIO
-    =====  =======================
-    MOSI/SDA   23
-    CLK        19
-    CS         22
-    DC/A0       5
-    RST        18
-    BCKL       17
-    =====  =======================
+    ==========  =======================
+    Pin         GPIO
+    ==========  =======================
+    MOSI/SDA    23
+    CLK         19
+    CS          22
+    DC          5
+    RST         18
+    BCKL        17
+    ==========  =======================
 
 (BCKL = backlight enable)
 
