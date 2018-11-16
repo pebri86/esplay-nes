@@ -263,7 +263,8 @@ static void videoTask(void *arg) {
     y = 0;
     while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
-		ili9341_write_frame(x, y, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, (const uint8_t **)bmp->line);
+		lcd_write_frame(x, y, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, (const uint8_t **)bmp->line);
+		//write_nes_frame(bmp, myPalette);
 	}
 }
 
@@ -334,8 +335,8 @@ int osd_init()
 	if (osd_init_sound())
 		return -1;
 
-	ili9341_init();
-	ili9341_write_frame(0,0,DEFAULT_FRAME_WIDTH,DEFAULT_FRAME_HEIGHT,NULL);
+	lcd_display_init();
+	lcd_write_frame(0,0,DEFAULT_FRAME_WIDTH,DEFAULT_FRAME_HEIGHT,NULL);
 	vidQueue=xQueueCreate(1, sizeof(bitmap_t *));
 	xTaskCreatePinnedToCore(&videoTask, "videoTask", 2048, NULL, 5, NULL, 1);
 	osd_initinput();

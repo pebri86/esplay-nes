@@ -126,7 +126,7 @@ static void LCD_WriteData(const uint8_t data)
     spi_write_byte(data);
 }
 
-static void  ILI9341_INITIAL ()
+static void  lcd_init()
 {
     LCD_BKG_ON();
     //------------------------------------Reset Sequence-----------------------------------------//
@@ -256,7 +256,7 @@ static void  ILI9341_INITIAL ()
 }
 //.............LCD API END----------
 
-static void ili_gpio_init()
+static void lcd_gpio_init()
 {
     PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[PIN_NUM_DC], 2);
     PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[PIN_NUM_RST], 2);
@@ -328,7 +328,7 @@ static uint16_t averageSamples(const uint8_t * data[], int dx, int dy, const uin
     return result;
 }
 
-void ili9341_write_frame(const uint16_t xs, const uint16_t ys, const uint16_t width, const uint16_t height, const uint8_t * data[]){
+void lcd_write_frame(const uint16_t xs, const uint16_t ys, const uint16_t width, const uint16_t height, const uint8_t * data[]){
     int x, y;
     int i;
     uint16_t x1, y1;
@@ -392,9 +392,9 @@ void ili9341_write_frame(const uint16_t xs, const uint16_t ys, const uint16_t wi
     while (READ_PERI_REG(SPI_CMD_REG(SPI_NUM))&SPI_USR);
 }
 
-void ili9341_init()
+void lcd_display_init()
 {
     spi_master_init();
-    ili_gpio_init();
-    ILI9341_INITIAL ();
+    lcd_gpio_init();
+    lcd_init();
 }
