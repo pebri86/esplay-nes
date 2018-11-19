@@ -38,7 +38,7 @@
 #include "driver/i2s.h"
 #include "sdkconfig.h"
 #include "esp_timer.h"
-#include <spi_lcd.h>
+#include <display.h>
 
 #include <gamepad.h>
 
@@ -47,6 +47,9 @@
 
 #define DEFAULT_FRAME_WIDTH     256
 #define DEFAULT_FRAME_HEIGHT    NES_VISIBLE_HEIGHT
+
+#define LCD_WIDTH       160
+#define LCD_HEIGHT      128
 
 esp_timer_handle_t timer=NULL;
 int timerfreq;
@@ -102,12 +105,12 @@ static void do_audio_frame() {
 void osd_setsound(void (*playfunc)(void *buffer, int length))
 {
    //Indicates we should call playfunc() to get more data.
-   audio_callback = playfunc;
+	audio_callback = playfunc;
 }
 
 static void osd_stopsound(void)
 {
-   audio_callback = NULL;
+	audio_callback = NULL;
 }
 
 
@@ -143,8 +146,8 @@ static int osd_init_sound(void)
 
 void osd_getsoundinfo(sndinfo_t *info)
 {
-   info->sample_rate = DEFAULT_SAMPLERATE;
-   info->bps = 16;
+	info->sample_rate = DEFAULT_SAMPLERATE;
+	info->bps = 16;
 }
 
 /*
@@ -182,9 +185,9 @@ bitmap_t *myBitmap;
 
 void osd_getvideoinfo(vidinfo_t *info)
 {
-   info->default_width = DEFAULT_FRAME_WIDTH;
-   info->default_height = DEFAULT_FRAME_HEIGHT;
-   info->driver = &sdlDriver;
+	info->default_width = DEFAULT_FRAME_WIDTH;
+	info->default_height = DEFAULT_FRAME_HEIGHT;
+	info->driver = &sdlDriver;
 }
 
 /* flip between full screen and windowed */
@@ -205,24 +208,24 @@ static void shutdown(void)
 /* set a video mode */
 static int set_mode(int width, int height)
 {
-   return 0;
+	return 0;
 }
 
-uint16 myPalette[256];
+uint16_t myPalette[256];
 
 /* copy nes palette over to hardware */
 static void set_palette(rgb_t *pal)
 {
 	uint16 c;
 
-   int i;
+	int i;
 
-   for (i = 0; i < 256; i++)
-   {
-      c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
+	for (i = 0; i < 256; i++)
+	{
+		c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
       //myPalette[i]=(c>>8)|((c&0xff)<<8);
-      myPalette[i]=c;
-   }
+		myPalette[i]=c;
+	}
 
 }
 
@@ -232,20 +235,18 @@ static void clear(uint8 color)
 //   SDL_FillRect(mySurface, 0, color);
 }
 
-
-
 /* acquire the directbuffer for writing */
 static bitmap_t *lock_write(void)
 {
 //   SDL_LockSurface(mySurface);
-   myBitmap = bmp_createhw((uint8*)fb, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_WIDTH*2);
-   return myBitmap;
+	myBitmap = bmp_createhw((uint8*)fb, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_WIDTH*2);
+	return myBitmap;
 }
 
 /* release the resource */
 static void free_write(int num_dirties, rect_t *dirty_rects)
 {
-   bmp_destroy(&myBitmap);
+	bmp_destroy(&myBitmap);
 }
 
 
@@ -256,15 +257,45 @@ static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
 
 
 //This runs on core 1.
+#define U16x2toU32(m,l) ((((uint32_t)(l>>8|(l&0xFF)<<8))<<16)|(m>>8|(m&0xFF)<<8))
+#define AVERAGE(a, b)   ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
+static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
+{
+	uint16_t a,b;
+	a = AVERAGE(myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH])],myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
+	b = AVERAGE(myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH)])],myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
+	return AVERAGE(a,b);
+}
+
 static void videoTask(void *arg) {
 	int x, y;
+	uint16_t a, b;
 	bitmap_t *bmp=NULL;
-	x = 0;
-    y = 0;
-    while(1) {
+	uint16_t line[2][LCD_WIDTH];
+    //Indexes of the line currently being sent to the LCD and the line we're calculating.
+	int sending_line=-1;
+	int calc_line=0;
+	while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
-		lcd_write_frame(x, y, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, (const uint8_t **)bmp->line);
-		//write_nes_frame(bmp, myPalette);
+		const uint8_t ** data = (const uint8_t **)bmp->line;
+		for (y=0; y<LCD_HEIGHT; y++) {
+	        //Calculate a line.
+			for (x=0; x<LCD_WIDTH; x++) {
+				a = averageSamples(data, x, y);
+				b = averageSamples(data, x, y);
+				line[calc_line][x]=U16x2toU32(a,b);
+			}
+	        //Finish up the sending process of the previous line, if any
+			if (sending_line!=-1) send_line_finish();
+	        //Swap sending_line and calc_line
+			sending_line=calc_line;
+			calc_line=(calc_line==1)?0:1;
+	        //Send the line we currently calculated.
+			send_lines(y, line[sending_line]);
+	        //The line set is queued up for sending now; the actual sending happens in the
+	        //background. We can go on to calculate the next line set as long as we do not
+	        //touch line[sending_line]; the SPI sending process is still reading from that.
+		}
 	}
 }
 
@@ -281,9 +312,9 @@ static void osd_initinput()
 void osd_getinput(void)
 {
 	const int ev[16]={
-			event_joypad1_select,0,0,event_joypad1_start,event_joypad1_up,event_joypad1_right,event_joypad1_down,event_joypad1_left,
-			0,0,0,0,event_soft_reset,event_joypad1_a,event_joypad1_b,event_hard_reset
-		};
+		event_joypad1_select,0,0,event_joypad1_start,event_joypad1_up,event_joypad1_right,event_joypad1_down,event_joypad1_left,
+		0,0,0,0,event_soft_reset,event_joypad1_a,event_joypad1_b,event_hard_reset
+	};
 	static int oldb=0xffff;
 	int b=gpdReadInput();
 	int chg=b^oldb;
@@ -321,7 +352,7 @@ void osd_shutdown()
 
 static int logprint(const char *string)
 {
-   return printf("%s", string);
+	return printf("%s", string);
 }
 
 /*
@@ -335,8 +366,7 @@ int osd_init()
 	if (osd_init_sound())
 		return -1;
 
-	lcd_display_init();
-	lcd_write_frame(0,0,DEFAULT_FRAME_WIDTH,DEFAULT_FRAME_HEIGHT,NULL);
+	display_init();
 	vidQueue=xQueueCreate(1, sizeof(bitmap_t *));
 	xTaskCreatePinnedToCore(&videoTask, "videoTask", 2048, NULL, 5, NULL, 1);
 	osd_initinput();
