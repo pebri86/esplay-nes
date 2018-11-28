@@ -7,9 +7,7 @@
 #include "driver/spi_master.h"
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
-
-#define LCD_WIDTH       160
-#define LCD_HEIGHT      128
+#include "display.h"
 
 #define PIN_NUM_MOSI    CONFIG_HW_LCD_MOSI_GPIO
 #define PIN_NUM_CLK     CONFIG_HW_LCD_CLK_GPIO

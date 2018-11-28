@@ -13,6 +13,9 @@ extern "C"
 {
 #endif
 
+#define LCD_WIDTH       160
+#define LCD_HEIGHT      128
+
 void display_init();
 void send_lines(int ypos, uint16_t *linedata);
 void send_line_finish();

@@ -42,14 +42,11 @@
 
 #include <gamepad.h>
 
-#define DEFAULT_SAMPLERATE      22100
+#define DEFAULT_SAMPLERATE      32000
 #define DEFAULT_FRAGSIZE        128
 
 #define DEFAULT_FRAME_WIDTH     256
 #define DEFAULT_FRAME_HEIGHT    NES_VISIBLE_HEIGHT
-
-#define LCD_WIDTH       160
-#define LCD_HEIGHT      128
 
 esp_timer_handle_t timer=NULL;
 int timerfreq;
@@ -93,8 +90,10 @@ static void do_audio_frame() {
 		audio_callback(audio_frame, n); //get more data
 		//16 bit mono -> 32-bit (16 bit r+l)
 		for (int i=n-1; i>=0; i--) {
-			audio_frame[i*2+1]=audio_frame[i];
-			audio_frame[i*2]=audio_frame[i];
+			int sample = (int)audio_frame[i];
+			
+			audio_frame[i*2]= (short)sample;
+            audio_frame[i*2+1] = (short)sample;
 		}
 		i2s_write_bytes(0, audio_frame, 4*n, portMAX_DELAY);
 		left-=n;
@@ -125,7 +124,7 @@ static int osd_init_sound(void)
 		.channel_format=I2S_CHANNEL_FMT_RIGHT_LEFT,
 		.communication_format=I2S_COMM_FORMAT_I2S_MSB,
 		.intr_alloc_flags=0,
-		.dma_buf_count=4,
+		.dma_buf_count=6,
 		.dma_buf_len=512
 	};
 	i2s_driver_install(0, &cfg, 4, &queue);
@@ -223,7 +222,7 @@ static void set_palette(rgb_t *pal)
 	for (i = 0; i < 256; i++)
 	{
 		c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
-      //myPalette[i]=(c>>8)|((c&0xff)<<8);
+      	//myPalette[i]=(c>>8)|((c&0xff)<<8);
 		myPalette[i]=c;
 	}
 
@@ -272,29 +271,21 @@ static void videoTask(void *arg) {
 	uint16_t a, b;
 	bitmap_t *bmp=NULL;
 	uint16_t line[2][LCD_WIDTH];
-    //Indexes of the line currently being sent to the LCD and the line we're calculating.
 	int sending_line=-1;
 	int calc_line=0;
 	while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
 		const uint8_t ** data = (const uint8_t **)bmp->line;
 		for (y=0; y<LCD_HEIGHT; y++) {
-	        //Calculate a line.
 			for (x=0; x<LCD_WIDTH; x++) {
 				a = averageSamples(data, x, y);
 				b = averageSamples(data, x, y);
 				line[calc_line][x]=U16x2toU32(a,b);
 			}
-	        //Finish up the sending process of the previous line, if any
 			if (sending_line!=-1) send_line_finish();
-	        //Swap sending_line and calc_line
 			sending_line=calc_line;
 			calc_line=(calc_line==1)?0:1;
-	        //Send the line we currently calculated.
 			send_lines(y, line[sending_line]);
-	        //The line set is queued up for sending now; the actual sending happens in the
-	        //background. We can go on to calculate the next line set as long as we do not
-	        //touch line[sending_line]; the SPI sending process is still reading from that.
 		}
 	}
 }
@@ -312,8 +303,22 @@ static void osd_initinput()
 void osd_getinput(void)
 {
 	const int ev[16]={
-		event_joypad1_select,0,0,event_joypad1_start,event_joypad1_up,event_joypad1_right,event_joypad1_down,event_joypad1_left,
-		0,0,0,0,event_soft_reset,event_joypad1_a,event_joypad1_b,event_hard_reset
+		event_joypad1_select,
+		0,
+		0,
+		event_joypad1_start,
+		event_joypad1_up,
+		event_joypad1_right,
+		event_joypad1_down,
+		event_joypad1_left,
+		0,
+		0,
+		0,
+		0,
+		event_soft_reset,
+		event_joypad1_a,
+		event_joypad1_b,
+		event_hard_reset
 	};
 	static int oldb=0xffff;
 	int b=gpdReadInput();
