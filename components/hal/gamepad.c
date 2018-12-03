@@ -6,28 +6,32 @@
 #include "driver/gpio.h"
 #include <esp_log.h>
 #include "sdkconfig.h"
+#include "gamepad.h"
 
-
-// Set buttons with pins
-#define A       CONFIG_GAMEPAD_A
-#define B       CONFIG_GAMEPAD_B
-#define START   CONFIG_GAMEPAD_START
-#define SELECT  CONFIG_GAMEPAD_SELECT
-#define UP      CONFIG_GAMEPAD_UP
-#define DOWN    CONFIG_GAMEPAD_DOWN
-#define LEFT    CONFIG_GAMEPAD_LEFT
-#define RIGHT   CONFIG_GAMEPAD_RIGHT
-
-
-int gpdReadInput()
+gamepad_state gamepad_input_read_raw()
 {
-	return 0xFFFF ^ ((!gpio_get_level(A) << 13) | (!gpio_get_level(B) << 14) |
-			(!gpio_get_level(START) << 3) | (!gpio_get_level(SELECT) << 0) |
-			(!gpio_get_level(UP) << 4) | (!gpio_get_level(DOWN) << 6) |
-			(!gpio_get_level(LEFT) << 7) | (!gpio_get_level(RIGHT) << 5));
+	gamepad_state state = {0};
+
+	state.values[GAMEPAD_INPUT_UP] = !(gpio_get_level(UP));
+    state.values[GAMEPAD_INPUT_DOWN] = !(gpio_get_level(DOWN));
+    state.values[GAMEPAD_INPUT_LEFT] = !(gpio_get_level(LEFT));
+    state.values[GAMEPAD_INPUT_RIGHT] = !(gpio_get_level(RIGHT));
+
+	state.values[GAMEPAD_INPUT_SELECT] = !(gpio_get_level(SELECT));
+    state.values[GAMEPAD_INPUT_START] = !(gpio_get_level(START));
+
+    state.values[GAMEPAD_INPUT_A] = !(gpio_get_level(A));
+    state.values[GAMEPAD_INPUT_B] = !(gpio_get_level(B));
+
+    return state;
 }
 
-void gamepadInit()
+void gamepad_read(gamepad_state* out_state)
+{
+	*out_state = gamepad_input_read_raw();
+}
+
+void gamepad_init()
 {
 	//Configure button
 	gpio_config_t btn_config;

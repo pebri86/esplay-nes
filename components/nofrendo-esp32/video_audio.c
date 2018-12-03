@@ -38,36 +38,26 @@
 #include "driver/i2s.h"
 #include "sdkconfig.h"
 #include "esp_timer.h"
-#include <display.h>
 
+#include <display.h>
 #include <gamepad.h>
+#include <audio.h>
 
 #define DEFAULT_SAMPLERATE      32000
-#define DEFAULT_FRAGSIZE        128
+#define DEFAULT_FRAGSIZE        512
 
 #define DEFAULT_FRAME_WIDTH     256
 #define DEFAULT_FRAME_HEIGHT    NES_VISIBLE_HEIGHT
 
-esp_timer_handle_t timer=NULL;
-int timerfreq;
+TimerHandle_t timer;
 
 //Seemingly, this will be called only once. Should call func with a freq of frequency,
 int osd_installtimer(int frequency, void *func, int funcsize, void *counter, int countersize)
 {
-	if (timer) {
-		esp_timer_stop(timer);
-		esp_timer_delete(timer);
-	}
 	printf("Timer install, freq=%d\n", frequency);
-	esp_timer_create_args_t args={
-		.callback=func,
-		.dispatch_method=ESP_TIMER_TASK,
-		.name="refresh"
-	};
-	esp_timer_create(&args, &timer);
-	esp_timer_start_periodic(timer, 1000000/frequency);
-	timerfreq=frequency;
-	return 0;
+	timer=xTimerCreate("nes",configTICK_RATE_HZ/frequency, pdTRUE, NULL, func);
+	xTimerStart(timer, 0);
+   return 0;
 }
 
 
@@ -77,7 +67,7 @@ int osd_installtimer(int frequency, void *func, int funcsize, void *counter, int
 static void (*audio_callback)(void *buffer, int length) = NULL;
 #if CONFIG_SOUND_ENA
 QueueHandle_t queue;
-static uint16_t *audio_frame;
+static short *audio_frame;
 #endif
 
 static void do_audio_frame() {
@@ -91,11 +81,12 @@ static void do_audio_frame() {
 		//16 bit mono -> 32-bit (16 bit r+l)
 		for (int i=n-1; i>=0; i--) {
 			int sample = (int)audio_frame[i];
-			
+
 			audio_frame[i*2]= (short)sample;
             audio_frame[i*2+1] = (short)sample;
 		}
-		i2s_write_bytes(0, audio_frame, 4*n, portMAX_DELAY);
+
+        audio_submit(audio_frame, n);
 		left-=n;
 	}
 #endif
@@ -117,27 +108,8 @@ static int osd_init_sound(void)
 {
 #if CONFIG_SOUND_ENA
 	audio_frame=malloc(4*DEFAULT_FRAGSIZE);
-	i2s_config_t cfg={
-		.mode=I2S_MODE_DAC_BUILT_IN|I2S_MODE_TX|I2S_MODE_MASTER,
-		.sample_rate=DEFAULT_SAMPLERATE,
-		.bits_per_sample=I2S_BITS_PER_SAMPLE_16BIT,
-		.channel_format=I2S_CHANNEL_FMT_RIGHT_LEFT,
-		.communication_format=I2S_COMM_FORMAT_I2S_MSB,
-		.intr_alloc_flags=0,
-		.dma_buf_count=6,
-		.dma_buf_len=512
-	};
-	i2s_driver_install(0, &cfg, 4, &queue);
-	i2s_set_pin(0, NULL);
-	i2s_set_dac_mode(I2S_DAC_CHANNEL_LEFT_EN);
-
-	//I2S enables *both* DAC channels; we only need DAC1.
-	//ToDo: still needed now I2S supports set_dac_mode?
-	CLEAR_PERI_REG_MASK(RTC_IO_PAD_DAC1_REG, RTC_IO_PDAC1_DAC_XPD_FORCE_M);
-	CLEAR_PERI_REG_MASK(RTC_IO_PAD_DAC1_REG, RTC_IO_PDAC1_XPD_DAC_M);
-
+	audio_init(DEFAULT_SAMPLERATE);
 #endif
-
 	audio_callback = NULL;
 
 	return 0;
@@ -297,7 +269,53 @@ static void videoTask(void *arg) {
 
 static void osd_initinput()
 {
-	gamepadInit();
+	gamepad_init();
+}
+
+static int ConvertGamepadInput()
+{
+   	gamepad_state state;
+    gamepad_read(&state);
+
+	int result = 0;
+
+	// A
+	if (!state.values[GAMEPAD_INPUT_A])
+	{
+		result |= (1 << 13);
+	}
+
+	// B
+	if (!state.values[GAMEPAD_INPUT_B])
+	{
+		result |= (1 << 14);
+	}
+
+	// select
+	if (!state.values[GAMEPAD_INPUT_SELECT])
+		result |= (1 << 0);
+
+	// start
+	if (!state.values[GAMEPAD_INPUT_START])
+		result |= (1 << 3);
+
+	// right
+	if (!state.values[GAMEPAD_INPUT_RIGHT])
+			result |= (1 << 5);
+
+	// left
+	if (!state.values[GAMEPAD_INPUT_LEFT])
+			result |= (1 << 7);
+
+	// up
+	if (!state.values[GAMEPAD_INPUT_UP])
+			result |= (1 << 4);
+
+	// down
+	if (!state.values[GAMEPAD_INPUT_DOWN])
+			result |= (1 << 6);
+
+	return result;
 }
 
 void osd_getinput(void)
@@ -321,7 +339,7 @@ void osd_getinput(void)
 		event_hard_reset
 	};
 	static int oldb=0xffff;
-	int b=gpdReadInput();
+	int b=ConvertGamepadInput();
 	int chg=b^oldb;
 	int x;
 	oldb=b;
