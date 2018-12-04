@@ -8,23 +8,21 @@
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
 #include "display.h"
+#include <pretty_effect.h>
 
-#define PIN_NUM_MOSI    CONFIG_HW_LCD_MOSI_GPIO
-#define PIN_NUM_CLK     CONFIG_HW_LCD_CLK_GPIO
-#define PIN_NUM_CS      CONFIG_HW_LCD_CS_GPIO
-#define PIN_NUM_DC      CONFIG_HW_LCD_DC_GPIO
-#define PIN_NUM_RST     CONFIG_HW_LCD_RESET_GPIO
-#define PIN_NUM_BCKL    CONFIG_HW_LCD_BL_GPIO
+#define DEFAULT_FRAME_WIDTH     256
+#define DEFAULT_FRAME_HEIGHT    240
 
-#define MADCTL_MY       0x80
-#define MADCTL_MX       0x40
-#define MADCTL_MV       0x20
-#define MADCTL_ML       0x10
-#define MADCTL_RGB      0x00
-#define MADCTL_BGR      0x08
-#define MADCTL_MH       0x04
+#define U16x2toU32(m,l)         ((((uint32_t)(l>>8|(l&0xFF)<<8))<<16)|(m>>8|(m&0xFF)<<8))
+#define AVERAGE(a, b)           ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
+
+#define LINE_BUFFERS            (2)
+#define LINE_COUNT              (1)
 
 static spi_device_handle_t spi;
+uint16_t* line[LINE_BUFFERS];
+extern uint16_t myPalette[];
+
 /*
  The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct.
 */
@@ -33,12 +31,6 @@ typedef struct {
     uint8_t data[16];
     uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } lcd_init_cmd_t;
-
-typedef enum {
-    LCD_TYPE_ILI = 1,
-    LCD_TYPE_ST,
-    LCD_TYPE_MAX,
-} type_lcd_t;
 
 //Place data into DRAM. Constant data gets placed into DROM by default, which is not accessible by DMA.
 DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[]={
@@ -203,8 +195,77 @@ void send_line_finish()
     }
 }
 
+static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
+{
+	uint16_t a,b;
+	a = AVERAGE(myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH])],myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
+	b = AVERAGE(myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH)])],myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
+	return AVERAGE(a,b);
+}
+
+void write_nes_frame(const uint8_t * data[])
+{
+    short x,y;
+    uint16_t a,b;
+	int sending_line=-1;
+	int calc_line=0;
+    for (y=0; y<LCD_HEIGHT; y++) {
+	    for (x=0; x<LCD_WIDTH; x++) {
+            if (data == NULL)
+            {
+                a = 0;
+                b = 0;
+            }
+            else
+            {
+	            a = averageSamples(data, x, y);
+		        b = averageSamples(data, x, y);
+            }
+		    line[calc_line][x]=U16x2toU32(a,b);                
+		}
+		if (sending_line!=-1) send_line_finish();
+		sending_line=calc_line;
+		calc_line=(calc_line==1)?0:1;
+		send_lines(y, line[sending_line]);
+	}
+    send_line_finish();
+}
+
+int display_menu()
+{
+    int frame=0;
+    int sending_line=-1;
+    int calc_line=0;
+    while(1) {
+		frame++;
+        for (int y=0; y<128; y++) {
+            //Calculate a line.
+            pretty_effect_calc_lines(line[calc_line], y, frame, 1);
+            if (sending_line!=-1) send_line_finish();
+            sending_line=calc_line;
+            calc_line=(calc_line==1)?0:1;
+            send_lines(y, line[sending_line]);
+			if(getSelRom()!=12345){
+                send_line_finish();
+				freeMem();
+				return getSelRom();
+			}
+		}
+    }
+	
+	return 0;
+}
+
 void display_init()
 {
+    // Line buffers
+    const size_t lineSize = LCD_WIDTH * LINE_COUNT * sizeof(uint16_t);
+    for (int x = 0; x < LINE_BUFFERS; x++)
+    {
+        line[x] = heap_caps_malloc(lineSize, MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+        if (!line[x]) abort();
+    }
+
     esp_err_t ret;
     spi_bus_config_t buscfg={
         .mosi_io_num=PIN_NUM_MOSI,

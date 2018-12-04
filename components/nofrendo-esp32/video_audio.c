@@ -228,37 +228,11 @@ static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
 
 
 //This runs on core 1.
-#define U16x2toU32(m,l) ((((uint32_t)(l>>8|(l&0xFF)<<8))<<16)|(m>>8|(m&0xFF)<<8))
-#define AVERAGE(a, b)   ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
-static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
-{
-	uint16_t a,b;
-	a = AVERAGE(myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH])],myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
-	b = AVERAGE(myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH)])],myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
-	return AVERAGE(a,b);
-}
-
 static void videoTask(void *arg) {
-	int x, y;
-	uint16_t a, b;
 	bitmap_t *bmp=NULL;
-	uint16_t line[2][LCD_WIDTH];
-	int sending_line=-1;
-	int calc_line=0;
 	while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
-		const uint8_t ** data = (const uint8_t **)bmp->line;
-		for (y=0; y<LCD_HEIGHT; y++) {
-			for (x=0; x<LCD_WIDTH; x++) {
-				a = averageSamples(data, x, y);
-				b = averageSamples(data, x, y);
-				line[calc_line][x]=U16x2toU32(a,b);
-			}
-			if (sending_line!=-1) send_line_finish();
-			sending_line=calc_line;
-			calc_line=(calc_line==1)?0:1;
-			send_lines(y, line[sending_line]);
-		}
+		write_nes_frame((const uint8_t **)bmp->line);
 	}
 }
 
@@ -389,7 +363,8 @@ int osd_init()
 	if (osd_init_sound())
 		return -1;
 
-	display_init();
+	//display_init();
+	write_nes_frame(NULL);
 	vidQueue=xQueueCreate(1, sizeof(bitmap_t *));
 	xTaskCreatePinnedToCore(&videoTask, "videoTask", 2048, NULL, 5, NULL, 1);
 	osd_initinput();
