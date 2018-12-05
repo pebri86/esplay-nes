@@ -47,7 +47,7 @@ int getSelRom(){
 	return selRom;
 }
 //!!! Colors repeat after 3Bit(example: 001 = light green, 111 = max green -> 1000 = again light green),
-//		 so all values over (dec) 7 start to repeat the color, but they are stored in 5bits!!!  
+//		 so all values over (dec) 7 start to repeat the color, but they are stored in 5bits!!!
 //returns a 16bit rgb Color (1Bit + 15Bit bgr), values for each Color from 0-31
 //(MSB=? + 5Bits blue + 5Bits red + 5Bits green)
 int rgbColor(int red, int green, int blue){
@@ -70,12 +70,9 @@ static inline uint16_t get_bgnd_pixel(int x, int y, int yOff, int bootTV, int ch
 {
 	page=0;
 	if(test>=0){
-		if(y==0)test--;
-		return bootScreen(x,y,yOff,bootTV);
+	    if(y==0)test--;
+	    return bootScreen(x,y,yOff,bootTV);
 	}
-
-	if(x<=6 || x>=313 || y<3 || y>236 || (x>=23 && x<=25)) return 0x0000;
-	//if((y-3)%9<3 || (y-3)%9>=9) return 0x0000;
 
 	return getCharPixel(x, y, change, choosen1);
 }
@@ -125,9 +122,9 @@ void freeMem(){
 }
 
 //initialize varibles for "timers" and input, gpios and load picture
-void ui_menu_init() 
+void ui_menu_init()
 {
-	slow=4;
+    slow=4;
     yOff=slow*880;
 	bootTV=slow*250;
 	test=slow*6000;
