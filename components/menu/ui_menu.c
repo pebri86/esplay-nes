@@ -11,7 +11,7 @@
 
 #include <esp_system.h>
 #include <math.h>
-#include "pretty_effect.h"
+#include "ui_menu.h"
 #include "driver/gpio.h"
 #include "charPixels.c"
 
@@ -31,28 +31,10 @@ int inputDelay;
 int lineMax;
 int selRom;
 
-bool xStretch;
-bool yStretch;
-	
 bool peGetPixel(char peChar, int pe1, int pe2){
 	return cpGetPixel(peChar,pe1,pe2);
 }
 
-bool getYStretch(){
-	return yStretch;
-}
-
-bool getXStretch(){
-	return xStretch;
-}
-
-void setXStretch(bool str){
-	xStretch=str;
-}
-
-void setYStretch(bool str){
-	yStretch=str;
-}
 void setLineMax(int lineM){
 	lineMax = lineM;
 }
@@ -91,7 +73,7 @@ static inline uint16_t get_bgnd_pixel(int x, int y, int yOff, int bootTV, int ch
 		if(y==0)test--;
 		return bootScreen(x,y,yOff,bootTV);
 	}
-	
+
 	if(x<=6 || x>=313 || y<3 || y>236 || (x>=23 && x<=25)) return 0x0000;
 	//if((y-3)%9<3 || (y-3)%9>=9) return 0x0000;
 
@@ -103,14 +85,14 @@ static inline uint16_t get_bgnd_pixel(int x, int y, int yOff, int bootTV, int ch
 static int prev_frame=-1;
 gamepad_state previous_state;
 
-void pretty_effect_calc_lines(uint16_t *dest, int line, int frame, int linect)
+void ui_menu_calc_lines(uint16_t *dest, int line, int frame, int linect)
 {
 	gamepad_state state;
 	gamepad_read(&state);
 
 	if(bootTV>0)bootTV--;
     if(yOff>0 && bootTV==0)yOff--;
-	
+
 	if(inputDelay>0)inputDelay-=1;
 	if(previous_state.values[GAMEPAD_INPUT_UP] && !state.values[GAMEPAD_INPUT_UP] && inputDelay==0 && choosen>0){
 		choosen-=1;
@@ -129,7 +111,7 @@ void pretty_effect_calc_lines(uint16_t *dest, int line, int frame, int linect)
 		if(change == 30)change = 0;
         prev_frame=frame;
     }
-	
+
     for (int y=line; y<line+linect; y++) {
 		for (int x=0; x<160; x++){
 			*dest++=get_bgnd_pixel(x, y, yOff, bootTV, choosen);
@@ -143,7 +125,7 @@ void freeMem(){
 }
 
 //initialize varibles for "timers" and input, gpios and load picture
-void pretty_effect_init() 
+void ui_menu_init() 
 {
 	slow=4;
     yOff=slow*880;
@@ -152,7 +134,5 @@ void pretty_effect_init()
 	choosen=0;
 	inputDelay=0;
 	lineMax = 0;
-	yStretch=0;
-	xStretch=0;
 	initRomList();
 }

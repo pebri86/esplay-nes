@@ -8,7 +8,7 @@
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
 #include "display.h"
-#include <pretty_effect.h>
+#include "ui_menu.h"
 
 #define DEFAULT_FRAME_WIDTH     256
 #define DEFAULT_FRAME_HEIGHT    240
@@ -221,7 +221,7 @@ void write_nes_frame(const uint8_t * data[])
 	            a = averageSamples(data, x, y);
 		        b = averageSamples(data, x, y);
             }
-		    line[calc_line][x]=U16x2toU32(a,b);                
+		    line[calc_line][x]=U16x2toU32(a,b);
 		}
 		if (sending_line!=-1) send_line_finish();
 		sending_line=calc_line;
@@ -240,7 +240,7 @@ int display_menu()
 		frame++;
         for (int y=0; y<128; y++) {
             //Calculate a line.
-            pretty_effect_calc_lines(line[calc_line], y, frame, 1);
+            ui_menu_calc_lines(line[calc_line], y, frame, 1);
             if (sending_line!=-1) send_line_finish();
             sending_line=calc_line;
             calc_line=(calc_line==1)?0:1;
@@ -252,7 +252,7 @@ int display_menu()
 			}
 		}
     }
-	
+
 	return 0;
 }
 
