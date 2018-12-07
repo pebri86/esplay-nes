@@ -11,6 +11,7 @@
 
 #include <esp_system.h>
 #include <math.h>
+#include "decode_image.h"
 #include "ui_menu.h"
 #include "driver/gpio.h"
 #include "charPixels.c"
@@ -18,6 +19,7 @@
 #include <display.h>
 #include <gamepad.h>
 
+uint16_t **pixels;
 int yOff;
 int newX;
 int bootTV;
@@ -62,7 +64,28 @@ int getNoise(){
 //Grab a rgb16 pixel from the esp32_tiles image, scroll part of it in
 static inline uint16_t bootScreen(int x, int y, int yOff, int bootTV){
 	if(gpio_get_level(START)==1)test=0;
-	return getNoise();
+	if(bootTV<slow*251 && bootTV>slow*150) return 0;//getNoise();
+	else if(bootTV>0){
+		if(x>125 && x<142 && y>105 && y<114){
+			int xAct = (x/2);
+			int yAct = (y/2);
+			if(pixels[yAct+40][xAct]<0x8000+1000)return 0;//0x8000+31;
+			else return 0;//getNoise();
+		}
+		return 0;//getNoise();
+	}
+	if(x>=0 && x <=160){
+	if(y<80 && pixels[y][x]!=0x0000 ){
+		return pixels[y][x];
+	}
+	else y=y-yOff/8;
+
+	if(y<80 || pixels[y][x]==0x0000){
+		return 0;//getNoise();
+	}
+
+    return pixels[y][x];}
+	else return getNoise();
 }
 
 //run "boot screen" (intro) and later menu to choose a rom
@@ -118,11 +141,15 @@ void ui_menu_calc_lines(uint16_t *dest, int line, int frame, int linect)
 }
 
 void freeMem(){
+	for (int i=0; i<128; i++) {
+            free((pixels)[i]);
+        }
+    free(pixels);
 	freeRL();
 }
 
 //initialize varibles for "timers" and input, gpios and load picture
-void ui_menu_init()
+esp_err_t ui_menu_init()
 {
     slow=4;
     yOff=slow*880;
@@ -132,4 +159,5 @@ void ui_menu_init()
 	inputDelay=0;
 	lineMax = 0;
 	initRomList();
+	return decode_image(&pixels);
 }

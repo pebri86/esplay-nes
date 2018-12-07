@@ -96,7 +96,7 @@ config SOUND_ENA
 	default n
 	help
 		ESP32 will output 0-3.3V analog audio signal on GPIO26.
-		
+
 config GAMEPAD_A_CUST
 	int "Gamepad A GPIO pin number"
 	depends on HW_CUSTOM
@@ -131,7 +131,7 @@ config GAMEPAD_DOWN_CUST
 	int "Gamepad DOWN GPIO pin number"
 	depends on HW_CUSTOM
 	range 0 33
-	default 25
+	default 15
 
 config GAMEPAD_LEFT_CUST
 	int "Gamepad LEFT GPIO pin number"
@@ -144,6 +144,12 @@ config GAMEPAD_RIGHT_CUST
 	depends on HW_CUSTOM
 	range 0 33
 	default 27
+
+config GAMEPAD_MENU_CUST
+	int "Gamepad MENU GPIO pin number"
+	depends on HW_CUSTOM
+	range 0 33
+	default 13
 
 config GAMEPAD_A
 	int
@@ -173,7 +179,7 @@ config GAMEPAD_UP
 config GAMEPAD_DOWN
 	int
     default GAMEPAD_DOWN_CUST if HW_CUSTOM
-	default 25 if ESP_MICRO_NES_HW
+	default 15 if ESP_MICRO_NES_HW
 
 config GAMEPAD_LEFT
 	int
@@ -184,5 +190,10 @@ config GAMEPAD_RIGHT
 	int
     default GAMEPAD_RIGHT_CUST if HW_CUSTOM
 	default 27 if ESP_MICRO_NES_HW
+
+config GAMEPAD_MENU
+	int
+    default GAMEPAD_MENU_CUST if HW_CUSTOM
+	default 13 if ESP_MICRO_NES_HW
 
 endmenu

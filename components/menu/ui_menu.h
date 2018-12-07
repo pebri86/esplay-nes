@@ -6,7 +6,7 @@
 #include "esp_err.h"
 
 void ui_menu_calc_lines(uint16_t *dest, int line, int frame, int linect);
-void ui_menu_init();
+esp_err_t ui_menu_init();
 bool peGetPixel(char peChar, int pe1, int pe2);
 void setLineMax(int lineM);
 int getSelRom();

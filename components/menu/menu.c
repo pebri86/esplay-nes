@@ -3,8 +3,10 @@
 
 int runMenu()
 {
+    esp_err_t ret;
     //Initialize the menu displayed
-    ui_menu_init();
+    ret = ui_menu_init();
+    ESP_ERROR_CHECK(ret);
 	setSelRom(12345);
 	return display_menu();
 }
