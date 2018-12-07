@@ -13,27 +13,24 @@ extern "C"
 {
 #endif
 
-#define PIN_NUM_MOSI    CONFIG_HW_LCD_MOSI_GPIO
-#define PIN_NUM_CLK     CONFIG_HW_LCD_CLK_GPIO
-#define PIN_NUM_CS      CONFIG_HW_LCD_CS_GPIO
-#define PIN_NUM_DC      CONFIG_HW_LCD_DC_GPIO
-#define PIN_NUM_RST     CONFIG_HW_LCD_RESET_GPIO
-#define PIN_NUM_BCKL    CONFIG_HW_LCD_BL_GPIO
+#define LCD_TYPE_ILI    0
+#define LCD_TYPE_ST     1
 
-#define MADCTL_MY       0x80
-#define MADCTL_MX       0x40
-#define MADCTL_MV       0x20
-#define MADCTL_ML       0x10
-#define MADCTL_RGB      0x00
-#define MADCTL_BGR      0x08
-#define MADCTL_MH       0x04
+#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
+#include "ili9341.h"
+#define LCD_WIDTH       320
+#define LCD_HEIGHT      240
+#endif
 
+#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
+#include "st7735r.h"
 #define LCD_WIDTH       160
 #define LCD_HEIGHT      128
+#endif
 
 void display_init();
 void send_lines(int ypos, uint16_t *linedata);
-void send_line_finish();
+//void send_line_finish();
 void write_nes_frame(const uint8_t * data[]);
 int display_menu();
 

@@ -1,6 +1,8 @@
 #ifndef GAMEPAD_H
 #define GAMEPAD_H
 
+#include <stdint.h>
+
 #define A       CONFIG_GAMEPAD_A
 #define B       CONFIG_GAMEPAD_B
 #define START   CONFIG_GAMEPAD_START
@@ -27,10 +29,11 @@ enum
 typedef struct
 {
     uint8_t values[GAMEPAD_INPUT_MAX];
-} gamepad_state;
+} input_gamepad_state;
 
-gamepad_state gamepad_input_read_raw();
-void gamepad_read(gamepad_state* out_state);
 void gamepad_init();
+void input_gamepad_terminate();
+void gamepad_read(input_gamepad_state* out_state);
+input_gamepad_state gamepad_input_read_raw();
 
 #endif

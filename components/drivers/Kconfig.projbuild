@@ -14,6 +14,24 @@ config HW_CUSTOM
 
 endchoice
 
+choice HW_LCD_TYPE_SEL
+	prompt "LCD type"
+	depends on HW_CUSTOM
+
+config HW_LCD_TYPE_ILI
+	bool "ILI9341 LCD"
+
+config HW_LCD_TYPE_ST
+	bool "ST7735R LCD"
+
+endchoice
+
+config HW_LCD_TYPE
+	int
+	default 1 if ESP_MICRO_NES_HW
+	default 0 if HW_LCD_TYPE_ILI
+	default 1 if HW_LCD_TYPE_ST
+
 config HW_LCD_MOSI_GPIO_CUST
 	int "LCD MOSI pin"
 	depends on HW_CUSTOM

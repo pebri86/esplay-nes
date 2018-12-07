@@ -237,6 +237,9 @@ static void videoTask(void *arg) {
 	while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
 		write_nes_frame((const uint8_t **)bmp->line);
+
+		// delay
+		// vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -252,7 +255,7 @@ static void osd_initinput()
 
 static int ConvertGamepadInput()
 {
-   	gamepad_state state;
+   	input_gamepad_state state;
     gamepad_read(&state);
 
 	int result = 0;

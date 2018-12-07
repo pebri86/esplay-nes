@@ -29,7 +29,6 @@ int page;
 int test;
 int change;
 int choosen;
-int inputDelay;
 int lineMax;
 int selRom;
 
@@ -103,24 +102,21 @@ static inline uint16_t get_bgnd_pixel(int x, int y, int yOff, int bootTV, int ch
 
 //This variable is used to detect the next frame.
 static int prev_frame=-1;
-gamepad_state previous_state;
+input_gamepad_state previous_state;
 
 void ui_menu_calc_lines(uint16_t *dest, int line, int frame, int linect)
 {
-	gamepad_state state;
+	input_gamepad_state state;
 	gamepad_read(&state);
 
 	if(bootTV>0)bootTV--;
     if(yOff>0 && bootTV==0)yOff--;
 
-	if(inputDelay>0)inputDelay-=1;
-	if(previous_state.values[GAMEPAD_INPUT_UP] && !state.values[GAMEPAD_INPUT_UP] && inputDelay==0 && choosen>0){
+	if(previous_state.values[GAMEPAD_INPUT_UP] && !state.values[GAMEPAD_INPUT_UP] && choosen>0){
 		choosen-=1;
-		inputDelay=100;
 	}
-	if(previous_state.values[GAMEPAD_INPUT_DOWN] && !state.values[GAMEPAD_INPUT_DOWN] && inputDelay==0 && choosen<lineMax){
+	if(previous_state.values[GAMEPAD_INPUT_DOWN] && !state.values[GAMEPAD_INPUT_DOWN] && choosen<lineMax){
 		choosen+=1;
-		inputDelay=100;
 	}
 	if(previous_state.values[GAMEPAD_INPUT_A] && !state.values[GAMEPAD_INPUT_A]) {
 		selRom=choosen;
@@ -156,7 +152,6 @@ esp_err_t ui_menu_init()
 	bootTV=slow*250;
 	test=slow*6000;
 	choosen=0;
-	inputDelay=0;
 	lineMax = 0;
 	initRomList();
 	return decode_image(&pixels);
