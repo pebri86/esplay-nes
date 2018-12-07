@@ -25,11 +25,11 @@ void audio_init(int sample_rate)
     i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
 }
 
-void audio_submit(uint8_t *buf, int len)//short* stereoAudioBuffer, int frameCount)
+void audio_submit(short* stereoAudioBuffer, int frameCount)
 {
-   /* short currentAudioSampleCount = frameCount * 2;
-
-    // Convert for built in DAC
+    short currentAudioSampleCount = frameCount * 2;
+/*
+    // Convert for built in DA
     for (short i = 0; i < currentAudioSampleCount; i += 2)
     {
          uint16_t dac0;
@@ -70,41 +70,24 @@ void audio_submit(uint8_t *buf, int len)//short* stereoAudioBuffer, int frameCou
          stereoAudioBuffer[i] = (int16_t)dac1;
          stereoAudioBuffer[i + 1] = (int16_t)dac0;
     }
-
+*/
     int len = currentAudioSampleCount * sizeof(int16_t);
-    int len = currentAudioSampleCount * sizeof(int16_t);
 
-        for (short i = 0; i < currentAudioSampleCount; ++i)
-        {
-            int sample = stereoAudioBuffer[i];
+    for (short i = 0; i < currentAudioSampleCount; ++i)
+    {
+         int sample = stereoAudioBuffer[i];
+         if (sample > 32767)
+             sample = 32767;
+         else if (sample < -32768)
+             sample = -32767;
 
-            if (sample > 32767)
-                sample = 32767;
-            else if (sample < -32768)
-                sample = -32767;
-
-            stereoAudioBuffer[i] = (short)sample;
-        }
+         stereoAudioBuffer[i] = (short)sample;
+    }
 
     int count = i2s_write_bytes(I2S_NUM, (const char *)stereoAudioBuffer, len, portMAX_DELAY);
     if (count != len)
     {
         printf("i2s_write_bytes: count (%d) != len (%d)\n", count, len);
         abort();
-    }*/
-    uint32_t tmpb[32];
-	int i=0;
-	while (i<len) {
-		int plen=len-i;
-		if (plen>32) plen=32;
-		for (int j=0; j<plen; j++) {
-			int s=((((int)buf[i+j])-128)*4); //Make [-128,127], multiply with volume
-			s=(s>>8)+(4/2); //divide off volume max, get back to [0-maxvol]
-			if (s>255) s=255;
-			if (s<0) s=0;
-			tmpb[j]=((s)<<8)+((s)<<24);
-		}
-		i2s_write_bytes(0, (char*)tmpb, plen*4, portMAX_DELAY);
-		i+=plen;
-	}
+    }
 }

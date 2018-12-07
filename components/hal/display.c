@@ -268,6 +268,7 @@ void display_init()
 
     esp_err_t ret;
     spi_bus_config_t buscfg={
+        .miso_io_num=-1,
         .mosi_io_num=PIN_NUM_MOSI,
         .sclk_io_num=PIN_NUM_CLK,
         .quadwp_io_num=-1,
@@ -282,10 +283,10 @@ void display_init()
         .pre_cb=lcd_spi_pre_transfer_callback,  //Specify pre-transfer callback to handle D/C line
     };
     //Initialize the SPI bus
-    ret=spi_bus_initialize(HSPI_HOST, &buscfg, 1);
+    ret=spi_bus_initialize(VSPI_HOST, &buscfg, 1);
     ESP_ERROR_CHECK(ret);
     //Attach the LCD to the SPI bus
-    ret=spi_bus_add_device(HSPI_HOST, &devcfg, &spi);
+    ret=spi_bus_add_device(VSPI_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
     //Initialize the LCD
     lcd_init(spi);

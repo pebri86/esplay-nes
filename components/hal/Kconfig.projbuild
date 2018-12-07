@@ -24,31 +24,31 @@ config HW_LCD_CLK_GPIO_CUST
 	int "LCD CLK pin"
 	depends on HW_CUSTOM
 	range 1 35
-	default 19
+	default 18
 
 config HW_LCD_CS_GPIO_CUST
 	int "LCD CS pin"
 	depends on HW_CUSTOM
 	range 1 35
-	default 22
+	default 17
 
 config HW_LCD_DC_GPIO_CUST
 	int "LCD DC pin"
 	depends on HW_CUSTOM
 	range 1 35
-	default 5
+	default 16
 
 config HW_LCD_RESET_GPIO_CUST
 	int "LCD RESET pin"
 	depends on HW_CUSTOM
 	range 1 35
-	default 18
+	default 19
 
 config HW_LCD_BL_GPIO_CUST
 	int "LCD Backlight Enable pin"
 	depends on HW_CUSTOM
 	range 1 35
-	default 17
+	default 5
 
 config HW_INV_BL_CUST
 	bool "Invert backlight output"
@@ -69,27 +69,27 @@ config HW_LCD_MOSI_GPIO
 config HW_LCD_CLK_GPIO
 	int
 	default HW_LCD_CLK_GPIO_CUST if HW_CUSTOM
-	default 19 if ESP_MICRO_NES_HW
+	default 18 if ESP_MICRO_NES_HW
 
 config HW_LCD_CS_GPIO
 	int
 	default HW_LCD_CS_GPIO_CUST if HW_CUSTOM
-	default 22 if ESP_MICRO_NES_HW
+	default 17 if ESP_MICRO_NES_HW
 
 config HW_LCD_DC_GPIO
 	int
 	default HW_LCD_DC_GPIO_CUST if HW_CUSTOM
-	default 5 if ESP_MICRO_NES_HW
+	default 16 if ESP_MICRO_NES_HW
 
 config HW_LCD_RESET_GPIO
 	int
 	default HW_LCD_RESET_GPIO_CUST if HW_CUSTOM
-	default 18 if ESP_MICRO_NES_HW
+	default 19 if ESP_MICRO_NES_HW
 
 config HW_LCD_BL_GPIO
 	int
 	default HW_LCD_BL_GPIO_CUST if HW_CUSTOM
-	default 17 if ESP_MICRO_NES_HW
+	default 5 if ESP_MICRO_NES_HW
 
 config SOUND_ENA
 	bool "Analog audio on GPIO26"
