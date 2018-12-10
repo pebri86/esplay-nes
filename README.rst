@@ -1,7 +1,7 @@
 ESP32-MICRONES, a Nintendo Entertainment System emulator for the ESP32
 ====================================================================
 
-This is a port of Nofrendo, a Nintendo Entertainment System emulator. This port is based on Sprite_tm ESP32-NESEMU and is entirely unsupported by Espressif. The code is adapted to my hardware configuration using cheap 160x128 1,8" ST7735R SPI display, NES video are scaled to fit display resolution using a simple image scaling alghoritm "smooth Bresenham scaling". Some text maybe hard to read due to scaling but most of rom text are readable.
+This is a port of Nofrendo, a Nintendo Entertainment System emulator. This port is based on Sprite_tm ESP32-NESEMU and is entirely unsupported by Espressif. The code is adapted to my hardware configuration using cheap 160x128 1,8" ST7735R SPI display or ILI9341 (configurable via menuconfig), NES video are scaled to fit display resolution using a simple image scaling alghoritm "smooth Bresenham scaling". Some text maybe hard to read due to scaling but most of rom text are readable.
 
 Compiling
 ---------
@@ -13,7 +13,7 @@ for your reference, the code was tested against release/v3.2 branch of esp-idf.
 Display
 -------
 
-To display the NES output, please connect a 160x128 1,8" ST7735R SPI display to the ESP32 in this way:
+To display the NES output, please connect a 160x128 1,8" ST7735R or ILI9341 SPI display to the ESP32 in this way:
 
     ==========  =======================
     Pin         GPIO
@@ -28,7 +28,7 @@ To display the NES output, please connect a 160x128 1,8" ST7735R SPI display to 
 
 (BCKL = backlight enable)
 
-Also connect the power supply and ground. For now, the LCD is controlled using a SPI DMA and fed to 2nd CPU. You can change different layout of lcd pins using menuconfig to adapt your hardware configuration, just select custom hardware on menuconfig and change your pins settings.
+Also connect the power supply and ground. For now, the LCD is controlled using a DMA controller and fed to 2nd CPU. You can change different layout of lcd pins and type of LCD using menuconfig to adapt your hardware configuration, just select custom hardware on menuconfig and change your pins settings. If you have another type of spi lcd display write your own driver and place in driver folder, adjust the code to use your newly created lcd driver. please notify me if you write your own driver so i can add in the repo.
 
 
 Controller
