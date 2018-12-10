@@ -80,7 +80,6 @@ void st7735r_init(void)
 	};
 
 	//Initialize non-SPI GPIOs
-	gpio_set_direction(ST7735R_DC, GPIO_MODE_OUTPUT);
 	gpio_set_direction(ST7735R_RST, GPIO_MODE_OUTPUT);
 	gpio_set_direction(ST7735R_BCKL, GPIO_MODE_OUTPUT);
 
@@ -108,33 +107,6 @@ void st7735r_init(void)
 	///Enable backlight
 	printf("Enable backlight.\n");
 	gpio_set_level(ST7735R_BCKL, 1);
-}
-
-void st7735r_send_lines(int ypos, uint16_t *linedata)
-{
-	uint8_t data[4];
-
-	//Column addresses
-	st7735r_send_cmd(0x2A);
-	data[0] = 0;
-	data[1] = 0;
-	data[2] = (ST7735R_HOR_RES) >> 8;
-	data[3] = (ST7735R_HOR_RES) & 0xFF;
-	st7735r_send_data(data, 4);
-
-	//Page addresses
-	st7735r_send_cmd(0x2B);
-	data[0] = ypos >> 8;
-	data[1] = ypos & 0xFF;
-	data[2] = ypos >> 8;
-	data[3] = ypos & 0xFF;
-	st7735r_send_data(data, 4);
-
-	//Memory write
-	st7735r_send_cmd(0x2C);
-
-	//Send the line databytes!
-	st7735r_send_data(linedata, ST7735R_HOR_RES * 2);
 }
 
 /*
@@ -240,12 +212,10 @@ void st7735r_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 
 static void st7735r_send_cmd(uint8_t cmd)
 {
-	gpio_set_level(ST7735R_DC, 0);	 /*Command mode*/
-	disp_spi_send(&cmd, 1);
+	disp_spi_send(&cmd, 1, CMD_ON);
 }
 
 static void st7735r_send_data(void * data, uint16_t length)
 {
-	gpio_set_level(ST7735R_DC, 1);	 /*Data mode*/
-	disp_spi_send(data, length);
+	disp_spi_send(data, length, DATA_ON);
 }

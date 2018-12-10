@@ -34,7 +34,8 @@ char *osd_getromdata() {
 		case 10:							partSize = 296; break;
 		default:							partSize = 0; break;
 	}
-	err=esp_partition_mmap(part, 0, partSize*1024, SPI_FLASH_MMAP_DATA, (const void**)&romdata, &hrom);
+	err=esp_partition_mmap(part, 0, partSize*1024, SPI_FLASH_MMAP_DATA, 
+							(const void**)&romdata, &hrom);
 	if (err!=ESP_OK) printf("Couldn't map rom part!\n");
 	printf("Initialized. ROM@%p\n", romdata);
     return (char*)romdata;

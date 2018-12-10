@@ -11,49 +11,38 @@
 #include "ui_menu.h"
 #include "disp_spi.h"
 
-#define DEFAULT_FRAME_WIDTH     256
-#define DEFAULT_FRAME_HEIGHT    240
+#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
+#include "ili9341.h"
+#define LCD_WIDTH       ILI9341_HOR_RES
+#define LCD_HEIGHT      ILI9341_VER_RES
+#endif
 
-#define U16x2toU32(m,l)         ((((uint32_t)(l>>8|(l&0xFF)<<8))<<16)|(m>>8|(m&0xFF)<<8))
-#define AVERAGE(a, b)           ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
+#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
+#include "st7735r.h"
+#define LCD_WIDTH       ST7735R_HOR_RES
+#define LCD_HEIGHT      ST7735R_VER_RES
+#endif
 
-#define LINE_BUFFERS            (2)
-#define LINE_COUNT              (1)
+#define NES_FRAME_WIDTH 256
+#define NES_FRAME_HEIGHT 240
+
+#define U16x2toU32(m,l) ((((uint32_t)(l>>8|(l&0xFF)<<8))<<16)|(m>>8|(m&0xFF)<<8))
+#define AVERAGE(a, b) ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
+
+#define LINE_BUFFERS (2)
+#define LINE_COUNT (1)
 
 uint16_t* line[LINE_BUFFERS];
 extern uint16_t myPalette[];
 
-void send_lines(int ypos, uint16_t *linedata)
-{
-   #if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
-        st7735r_send_lines(ypos, linedata);
-   #endif
-
-   #if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
-        ili9341_send_lines(ypos, linedata);
-   #endif
-}
-
-/*
-void send_line_finish()
-{
-    spi_transaction_t *rtrans;
-    esp_err_t ret;
-    //Wait for all 6 transactions to be done and get back the results.
-    for (int x=0; x<6; x++) {
-        ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
-        assert(ret==ESP_OK);
-        //We could inspect rtrans now if we received any info back. The LCD is treated as write-only, though.
-    }
-}
-*/
-
 static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
 {
 	uint16_t a,b;
-	a = AVERAGE(myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH])],myPalette[(unsigned char) (data[dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
-	b = AVERAGE(myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH)])],myPalette[(unsigned char) (data[(dy*DEFAULT_FRAME_HEIGHT/LCD_HEIGHT) + 1][(dx*DEFAULT_FRAME_WIDTH/LCD_WIDTH) + 1])]);
-	return AVERAGE(a,b);
+	int y = dy*NES_FRAME_HEIGHT/LCD_HEIGHT;
+	int x = dx*NES_FRAME_WIDTH/LCD_WIDTH;
+    a = AVERAGE(myPalette[(unsigned char) (data[y][x])],myPalette[(unsigned char) (data[y][x + 1])]);
+    b = AVERAGE(myPalette[(unsigned char) (data[y + 1][x])],myPalette[(unsigned char) (data[y + 1][x + 1])]);
+    return AVERAGE(a,b);
 }
 
 void write_nes_frame(const uint8_t * data[])
@@ -66,22 +55,21 @@ void write_nes_frame(const uint8_t * data[])
 	    for (x=0; x<LCD_WIDTH; x++) {
             if (data == NULL)
             {
-                a = 0;
-                b = 0;
+                line[calc_line][x] = 0;
             }
             else
             {
 	            a = averageSamples(data, x, y);
 		        b = averageSamples(data, x, y);
+		        line[calc_line][x]=U16x2toU32(a,b);
             }
-		    line[calc_line][x]=U16x2toU32(a,b);
 		}
-		//if (sending_line!=-1) send_line_finish();
+		if (sending_line!=-1) send_line_finish();
 		sending_line=calc_line;
 		calc_line=(calc_line==1)?0:1;
-		send_lines(y, line[sending_line]);
+		send_lines(y, LCD_WIDTH, line[sending_line]);
 	}
-    //send_line_finish();
+    send_line_finish();
 }
 
 int display_menu()
@@ -91,15 +79,15 @@ int display_menu()
     int calc_line=0;
     while(1) {
 		frame++;
-        for (int y=0; y<128; y++) {
+        for (int y=0; y<LCD_HEIGHT; y++) {
             //Calculate a line.
             ui_menu_calc_lines(line[calc_line], y, frame, 1);
-            //if (sending_line!=-1) send_line_finish();
+            if (sending_line!=-1) send_line_finish();
             sending_line=calc_line;
             calc_line=(calc_line==1)?0:1;
-            send_lines(y, line[sending_line]);
+            send_lines(y, LCD_WIDTH, line[sending_line]);
 			if(getSelRom()!=12345){
-                //send_line_finish();
+                send_line_finish();
 				freeMem();
 				return getSelRom();
 			}
@@ -118,7 +106,7 @@ void display_init()
         line[x] = heap_caps_malloc(lineSize, MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
         if (!line[x]) abort();
     }
-    //Initialize the LCD
+    // Initialize the LCD
     disp_spi_init();
 #if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
     st7735r_init();

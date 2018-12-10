@@ -22,9 +22,8 @@ extern "C" {
 #define ILI9341_HOR_RES	320
 #define ILI9341_VER_RES	320
 
-#define ILI9341_DC   CONFIG_HW_LCD_DC_GPIO
-#define ILI9341_RST  CONFIG_HW_LCD_RESET_GPIO
-#define ILI9341_BCKL CONFIG_HW_LCD_BL_GPIO
+#define ILI9341_RST     CONFIG_HW_LCD_RESET_GPIO
+#define ILI9341_BCKL    CONFIG_HW_LCD_BL_GPIO
 
 /**********************
  *      TYPEDEFS
@@ -35,7 +34,6 @@ extern "C" {
  **********************/
 
 void ili9341_init(void);
-void ili9341_send_lines(int ypos, uint16_t *linedata);
 //void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color);
 //void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
 

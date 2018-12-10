@@ -36,7 +36,7 @@ CONFIG_SECURE_BOOT_ENABLED=
 CONFIG_FLASH_ENCRYPTION_ENABLED=
 
 #
-# Nofrendo ESP32-specific configuration
+# Hardware configuration
 #
 CONFIG_ESP_MICRO_NES_HW=y
 CONFIG_HW_CUSTOM=

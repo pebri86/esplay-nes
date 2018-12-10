@@ -13,24 +13,7 @@ extern "C"
 {
 #endif
 
-#define LCD_TYPE_ILI    0
-#define LCD_TYPE_ST     1
-
-#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
-#include "ili9341.h"
-#define LCD_WIDTH       320
-#define LCD_HEIGHT      240
-#endif
-
-#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
-#include "st7735r.h"
-#define LCD_WIDTH       160
-#define LCD_HEIGHT      128
-#endif
-
 void display_init();
-void send_lines(int ypos, uint16_t *linedata);
-//void send_line_finish();
 void write_nes_frame(const uint8_t * data[]);
 int display_menu();
 
@@ -38,4 +21,4 @@ int display_menu();
 }
 #endif
 
-#endif //  _DISPLAY_H_
+#endif /*_DISPLAY_H_*/

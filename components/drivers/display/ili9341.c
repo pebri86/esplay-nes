@@ -14,6 +14,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
+#include "lcd_struct.h"
 
 /*********************
  *      DEFINES
@@ -23,17 +24,10 @@
  *      TYPEDEFS
  **********************/
 
-/*The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct. */
-typedef struct {
-    uint8_t cmd;
-    uint8_t data[16];
-    uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
-} lcd_init_cmd_t;
-
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void ili9441_send_cmd(uint8_t cmd);
+static void ili9341_send_cmd(uint8_t cmd);
 static void ili9341_send_data(void * data, uint16_t length);
 
 /**********************
@@ -79,7 +73,6 @@ void ili9341_init(void)
 	};
 
 	//Initialize non-SPI GPIOs
-	gpio_set_direction(ILI9341_DC, GPIO_MODE_OUTPUT);
 	gpio_set_direction(ILI9341_RST, GPIO_MODE_OUTPUT);
 	gpio_set_direction(ILI9341_BCKL, GPIO_MODE_OUTPUT);
 
@@ -96,7 +89,7 @@ void ili9341_init(void)
 	//Send all the commands
 	uint16_t cmd = 0;
 	while (ili_init_cmds[cmd].databytes!=0xff) {
-		ili9441_send_cmd(ili_init_cmds[cmd].cmd);
+		ili9341_send_cmd(ili_init_cmds[cmd].cmd);
 		ili9341_send_data(ili_init_cmds[cmd].data, ili_init_cmds[cmd].databytes&0x1F);
 		if (ili_init_cmds[cmd].databytes & 0x80) {
 			vTaskDelay(100 / portTICK_RATE_MS);
@@ -212,12 +205,10 @@ void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 
 static void ili9341_send_cmd(uint8_t cmd)
 {
-	gpio_set_level(ILI9341_DC, 0);	 /*Command mode*/
-	disp_spi_send(&cmd, 1);
+	disp_spi_send(&cmd, 1, CMD_ON);
 }
 
 static void ili9341_send_data(void * data, uint16_t length)
 {
-	gpio_set_level(ILI9341_DC, 1);	 /*Data mode*/
-	disp_spi_send(data, length);
+	disp_spi_send(data, length, DATA_ON);
 }

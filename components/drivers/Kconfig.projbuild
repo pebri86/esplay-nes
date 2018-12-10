@@ -1,4 +1,4 @@
-menu "Nofrendo ESP32-specific configuration"
+menu "Hardware configuration"
 
 choice NOFRENDO_HARDWARE
 	prompt "Hardware to run on"
