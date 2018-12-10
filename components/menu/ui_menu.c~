@@ -47,7 +47,7 @@ int getSelRom(){
 	return selRom;
 }
 //!!! Colors repeat after 3Bit(example: 001 = light green, 111 = max green -> 1000 = again light green),
-//so all values over (dec) 7 start to repeat the color, but they are stored in 5bits!!!
+//		 so all values over (dec) 7 start to repeat the color, but they are stored in 5bits!!!
 //returns a 16bit rgb Color (1Bit + 15Bit bgr), values for each Color from 0-31
 //(MSB=? + 5Bits blue + 5Bits red + 5Bits green)
 int rgbColor(int red, int green, int blue){
