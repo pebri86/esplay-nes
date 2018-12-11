@@ -73,6 +73,9 @@ void ui_init()
 void ui_create(void)
 {
 	//init_rom_list();
+	lv_theme_t *th = lv_theme_material_init(200, NULL);
+	lv_theme_set_current(th);
+
 	lv_obj_t * scr = lv_page_create(NULL, NULL);
 	lv_scr_load(scr);
 
@@ -97,6 +100,8 @@ void ui_create(void)
 	/*Crate the list*/
 	lv_obj_t * list1 = lv_list_create(scr, NULL);
 	lv_obj_set_size(list1, LV_HOR_RES, (LV_VER_RES-lv_obj_get_height(label)));
+	//lv_list_set_style(list1, LV_LIST_STYLE_BG, &lv_style_transp_tight);
+    lv_list_set_style(list1, LV_LIST_STYLE_SCRL, &lv_style_transp_tight);
 	lv_obj_align(list1, label, LV_ALIGN_IN_TOP_LEFT, ((lv_obj_get_width(label)-LV_HOR_RES)/2), 10);
 
 	/*Add list elements*/
@@ -104,6 +109,7 @@ void ui_create(void)
 	lv_list_add(list1, NULL, "Contra", list_release_action);
 	lv_list_add(list1, NULL, "Duck Tales", list_release_action);
 	lv_list_add(list1, NULL, "Duck Tales 2", list_release_action);
+	lv_list_add(list1, NULL, "Tetris", list_release_action);
 
 	lv_group_t *group = lv_group_create();
 	lv_group_add_obj(group, list1);
@@ -129,6 +135,7 @@ int ui_choose_rom()
 
 void ui_deinit()
 {
+	lv_obj_del(lv_scr_act());
 	esp_deregister_freertos_tick_hook(lv_tick_task);
 	ESP_LOGI(TAG_DEBUG, "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
 }
@@ -147,6 +154,8 @@ static lv_res_t list_release_action(lv_obj_t * btn)
 		selected = 2;
 	else if (strcmp("Duck Tales 2",label) == 0)
 		selected = 3;
+	else if (strcmp("Tetris",label) == 0)
+		selected = 4;
 	else
 		selected = -1;
 

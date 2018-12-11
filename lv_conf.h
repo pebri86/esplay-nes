@@ -103,10 +103,10 @@
  * which will determine the bit-per-pixel */
 #define LV_FONT_DEFAULT        &lv_font_dejavu_10     /*Always set a default font from the built-in fonts*/
 
-#define USE_LV_FONT_DEJAVU_10              4
+#define USE_LV_FONT_DEJAVU_10              2
 #define USE_LV_FONT_DEJAVU_10_LATIN_SUP    0
 #define USE_LV_FONT_DEJAVU_10_CYRILLIC     0
-#define USE_LV_FONT_SYMBOL_10              4
+#define USE_LV_FONT_SYMBOL_10              2
 
 #define USE_LV_FONT_DEJAVU_20              0
 #define USE_LV_FONT_DEJAVU_20_LATIN_SUP    0

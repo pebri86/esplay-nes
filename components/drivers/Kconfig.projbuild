@@ -167,7 +167,7 @@ config GAMEPAD_MENU_CUST
 	int "Gamepad MENU GPIO pin number"
 	depends on HW_CUSTOM
 	range 0 33
-	default 13
+	default 2
 
 config GAMEPAD_A
 	int
@@ -212,6 +212,6 @@ config GAMEPAD_RIGHT
 config GAMEPAD_MENU
 	int
     default GAMEPAD_MENU_CUST if HW_CUSTOM
-	default 13 if ESP_MICRO_NES_HW
+	default 2 if ESP_MICRO_NES_HW
 
 endmenu

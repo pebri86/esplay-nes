@@ -152,7 +152,8 @@ void gamepad_init()
 	btn_config.mode = GPIO_MODE_INPUT;               //Set as Input
 	btn_config.pin_bit_mask = (uint64_t)             //Bitmask
 		((uint64_t) 1 << A) | ((uint64_t) 1 << B) | ((uint64_t) 1 << START) | ((uint64_t) 1 << SELECT) |
-		((uint64_t) 1 << UP) | ((uint64_t) 1 << DOWN) | ((uint64_t) 1 << LEFT) | ((uint64_t) 1 << RIGHT);
+		((uint64_t) 1 << UP) | ((uint64_t) 1 << DOWN) | ((uint64_t) 1 << LEFT) | ((uint64_t) 1 << RIGHT) |
+		((uint64_t) 1 << MENU);
 
 	btn_config.pull_up_en = GPIO_PULLUP_ENABLE;      //Disable pullup
 	btn_config.pull_down_en = GPIO_PULLDOWN_DISABLE; //Enable pulldown
@@ -218,6 +219,12 @@ bool lv_keypad_read(lv_indev_data_t *data)
         //printf("ENTER\n");
         data->state = LV_INDEV_STATE_PR;
         data->key = LV_GROUP_KEY_NEXT;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_MENU] == 1)
+    {
+        printf("MENU\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_PREV;
     }
     else
     {
