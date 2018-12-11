@@ -2,6 +2,8 @@
 #define GAMEPAD_H
 
 #include <stdint.h>
+#include <stdbool.h>
+#include "lvgl/lv_hal/lv_hal_indev.h"
 
 #define A       CONFIG_GAMEPAD_A
 #define B       CONFIG_GAMEPAD_B
@@ -11,6 +13,7 @@
 #define DOWN    CONFIG_GAMEPAD_DOWN
 #define LEFT    CONFIG_GAMEPAD_LEFT
 #define RIGHT   CONFIG_GAMEPAD_RIGHT
+#define MENU    CONFIG_GAMEPAD_MENU
 
 enum
 {
@@ -22,6 +25,7 @@ enum
     GAMEPAD_INPUT_START,
     GAMEPAD_INPUT_A,
     GAMEPAD_INPUT_B,
+    GAMEPAD_INPUT_MENU,
 
 	GAMEPAD_INPUT_MAX
 };
@@ -35,5 +39,6 @@ void gamepad_init();
 void input_gamepad_terminate();
 void gamepad_read(input_gamepad_state* out_state);
 input_gamepad_state gamepad_input_read_raw();
+bool lv_keypad_read(lv_indev_data_t *data);
 
 #endif

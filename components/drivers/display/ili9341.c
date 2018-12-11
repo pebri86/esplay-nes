@@ -102,13 +102,12 @@ void ili9341_init(void)
 	gpio_set_level(ILI9341_BCKL, 1);
 }
 
-/*
 void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color)
 {
 	uint8_t data[4];
 
 	//Column addresses
-	ili9441_send_cmd(0x2A);
+	ili9341_send_cmd(0x2A);
 	data[0] = (x1 >> 8) & 0xFF;
 	data[1] = x1 & 0xFF;
 	data[2] = (x2 >> 8) & 0xFF;
@@ -116,7 +115,7 @@ void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t col
 	ili9341_send_data(data, 4);
 
 	//Page addresses
-	ili9441_send_cmd(0x2B);
+	ili9341_send_cmd(0x2B);
 	data[0] = (y1 >> 8) & 0xFF;
 	data[1] = y1 & 0xFF;
 	data[2] = (y2 >> 8) & 0xFF;
@@ -124,7 +123,7 @@ void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t col
 	ili9341_send_data(data, 4);
 
 	//Memory write
-	ili9441_send_cmd(0x2C);
+	ili9341_send_cmd(0x2C);
 
 	uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 1);
 	uint16_t color_swap = ((color.full >> 8) & 0xFF) | ((color.full & 0xFF) << 8);	//It's a 8 bit SPI bytes need to be swapped
@@ -147,12 +146,12 @@ void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t col
 }
 
 
-void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map)
+void ili9341_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map)
 {
 	uint8_t data[4];
 
 	//Column addresses
-	ili9441_send_cmd(0x2A);
+	ili9341_send_cmd(0x2A);
 	data[0] = (x1 >> 8) & 0xFF;
 	data[1] = x1 & 0xFF;
 	data[2] = (x2 >> 8) & 0xFF;
@@ -160,7 +159,7 @@ void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 	ili9341_send_data(data, 4);
 
 	//Page addresses
-	ili9441_send_cmd(0x2B);
+	ili9341_send_cmd(0x2B);
 	data[0] = (y1 >> 8) & 0xFF;
 	data[1] = y1 & 0xFF;
 	data[2] = (y2 >> 8) & 0xFF;
@@ -168,7 +167,7 @@ void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 	ili9341_send_data(data, 4);
 
 	//Memory write
-	ili9441_send_cmd(0x2C);
+	ili9341_send_cmd(0x2C);
 
 
 	uint32_t size = (x2 - x1 + 1) * (y2 - y1 + 1);
@@ -197,7 +196,6 @@ void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 	lv_flush_ready();
 
 }
-*/
 
 /**********************
  *   STATIC FUNCTIONS

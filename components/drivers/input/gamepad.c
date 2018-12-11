@@ -7,6 +7,8 @@
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include "gamepad.h"
+#include "lvgl/lv_hal/lv_hal_indev.h"
+#include "lvgl/lv_core/lv_group.h"
 
 static volatile bool input_task_is_running = false;
 static volatile input_gamepad_state gamepad_state;
@@ -29,6 +31,8 @@ input_gamepad_state gamepad_input_read_raw()
 
     state.values[GAMEPAD_INPUT_A] = !(gpio_get_level(A));
     state.values[GAMEPAD_INPUT_B] = !(gpio_get_level(B));
+
+    state.values[GAMEPAD_INPUT_MENU] = !(gpio_get_level(MENU));
 
     return state;
 }
@@ -71,6 +75,8 @@ static void input_task(void *arg)
 
         state.values[GAMEPAD_INPUT_A] = !(gpio_get_level(A));
         state.values[GAMEPAD_INPUT_B] = !(gpio_get_level(B));
+
+        state.values[GAMEPAD_INPUT_MENU] = !(gpio_get_level(MENU));
 
 #endif
 
@@ -165,4 +171,58 @@ void input_gamepad_terminate()
     if (!input_gamepad_initialized) abort();
 
     input_task_is_running = false;
+}
+
+bool lv_keypad_read(lv_indev_data_t *data)
+{
+    if (!input_gamepad_initialized) abort();
+
+    if(gamepad_state.values[GAMEPAD_INPUT_UP] == 1)
+    {
+        //printf("UP\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_UP;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_DOWN] == 1)
+    {
+        //printf("DOWN\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_DOWN;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_LEFT] == 1)
+    {
+        //printf("LEFT\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_LEFT;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_RIGHT] == 1)
+    {
+        //printf("RIGHT\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_RIGHT;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_B] == 1)
+    {
+        //printf("ESC\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_ESC;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_A] == 1)
+    {
+        //printf("ENTER\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_ENTER;
+    }
+    else if(gamepad_state.values[GAMEPAD_INPUT_SELECT] == 1)
+    {
+        //printf("ENTER\n");
+        data->state = LV_INDEV_STATE_PR;
+        data->key = LV_GROUP_KEY_NEXT;
+    }
+    else
+    {
+        data->state = LV_INDEV_STATE_REL;
+    }
+
+    return false;
 }
