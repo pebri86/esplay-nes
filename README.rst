@@ -47,6 +47,7 @@ To control the NES, connect GPIO pins to a common ground pcb gamepad:
     DOWN     25
     UP       33
     LEFT     32
+    MENU     2
     =======  =====
 
 Also connect the ground line. Same like lcd pins you can change different layout of gamepad pins via menuconfig.
@@ -74,6 +75,7 @@ otherwise the menu couldn't load the right partition.
 Copyright
 ---------
 
-Code in this repository is Copyright (C) 2016 Espressif Systems, licensed under the Apache License 2.0 as described in the file LICENSE. Code in the
-components/nofrendo is Copyright (c) 1998-2000 Matthew Conte (matt@conte.com) and licensed under the GPLv2.
+Code in this repository is Copyright (C) 2016 Espressif Systems, licensed under the Apache License 2.0 as described in the file LICENSE.
+Code in the components/nofrendo is Copyright (c) 1998-2000 Matthew Conte (matt@conte.com) and licensed under the GPLv2.
+Code in the components/lvgl is MIT licence Copyright (c) 2016 Gábor Kiss-Vámosi Open Source Graphics Library For Embedded https://github.com/littlevgl/lvgl.
 some code adapted from https://github.com/MittisBootloop/esp32_nesemu_wemosmini, thanks.

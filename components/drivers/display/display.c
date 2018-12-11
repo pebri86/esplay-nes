@@ -8,7 +8,6 @@
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
 #include "display.h"
-#include "ui_menu.h"
 #include "disp_spi.h"
 
 #if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
@@ -70,31 +69,6 @@ void write_nes_frame(const uint8_t * data[])
 		send_lines(y, LCD_WIDTH, line[sending_line]);
 	}
     send_line_finish();
-}
-
-int display_menu()
-{
-    int frame=0;
-    int sending_line=-1;
-    int calc_line=0;
-    while(1) {
-		frame++;
-        for (int y=0; y<LCD_HEIGHT; y++) {
-            //Calculate a line.
-            ui_menu_calc_lines(line[calc_line], y, frame, 1);
-            if (sending_line!=-1) send_line_finish();
-            sending_line=calc_line;
-            calc_line=(calc_line==1)?0:1;
-            send_lines(y, LCD_WIDTH, line[sending_line]);
-			if(getSelRom()!=12345){
-                send_line_finish();
-				freeMem();
-				return getSelRom();
-			}
-		}
-    }
-
-	return 0;
 }
 
 void display_init()

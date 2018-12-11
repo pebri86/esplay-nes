@@ -15,6 +15,8 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "lcd_struct.h"
+#include "driver/ledc.h"
+#include "driver/rtc_io.h"
 
 /*********************
  *      DEFINES
@@ -36,10 +38,14 @@
  **********************/
 static void st7735r_send_cmd(uint8_t cmd);
 static void st7735r_send_data(void * data, uint16_t length);
+static void backlight_init();
 
 /**********************
  *  STATIC VARIABLES
  **********************/
+const int DUTY_MAX = 0x1fff;
+const int LCD_BACKLIGHT_ON_VALUE = 1;
+bool isBackLightIntialized = false;
 
 /**********************
  *      MACROS
@@ -89,9 +95,7 @@ void st7735r_init(void)
 	gpio_set_level(ST7735R_RST, 1);
 	vTaskDelay(100 / portTICK_RATE_MS);
 
-
 	printf("st7735r initialization.\n");
-
 
 	//Send all the commands
 	uint16_t cmd = 0;
@@ -104,12 +108,23 @@ void st7735r_init(void)
 		cmd++;
 	}
 
-	///Enable backlight
-	printf("Enable backlight.\n");
-	gpio_set_level(ST7735R_BCKL, 1);
+	//Enable backlight
+	backlight_init();
 }
 
-/*
+int is_backlight_initialized()
+{
+    return isBackLightIntialized;
+}
+
+void backlight_percentage_set(int value)
+{
+    int duty = DUTY_MAX * (value * 0.01f);
+
+    ledc_set_fade_with_time(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty, 500);
+    ledc_fade_start(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, LEDC_FADE_NO_WAIT);
+}
+
 void st7735r_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color)
 {
 	uint8_t data[4];
@@ -204,7 +219,6 @@ void st7735r_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_colo
 	lv_flush_ready();
 
 }
-*/
 
 /**********************
  *   STATIC FUNCTIONS
@@ -218,4 +232,60 @@ static void st7735r_send_cmd(uint8_t cmd)
 static void st7735r_send_data(void * data, uint16_t length)
 {
 	disp_spi_send(data, length, DATA_ON);
+}
+
+static void backlight_init()
+{
+    // Note: In esp-idf v3.0, settings flash speed to 80Mhz causes the LCD controller
+    // to malfunction after a soft-reset.
+
+    // (duty range is 0 ~ ((2**bit_num)-1)
+
+
+    //configure timer0
+    ledc_timer_config_t ledc_timer;
+    memset(&ledc_timer, 0, sizeof(ledc_timer));
+
+    ledc_timer.bit_num = LEDC_TIMER_13_BIT; //set timer counter bit number
+    ledc_timer.freq_hz = 5000;              //set frequency of pwm
+    ledc_timer.speed_mode = LEDC_LOW_SPEED_MODE;   //timer mode,
+    ledc_timer.timer_num = LEDC_TIMER_0;    //timer index
+
+
+    ledc_timer_config(&ledc_timer);
+
+
+    //set the configuration
+    ledc_channel_config_t ledc_channel;
+    memset(&ledc_channel, 0, sizeof(ledc_channel));
+
+    //set LEDC channel 0
+    ledc_channel.channel = LEDC_CHANNEL_0;
+    //set the duty for initialization.(duty range is 0 ~ ((2**bit_num)-1)
+    ledc_channel.duty = (LCD_BACKLIGHT_ON_VALUE) ? 0 : DUTY_MAX;
+    //GPIO number
+    ledc_channel.gpio_num = ST7735R_BCKL;
+    //GPIO INTR TYPE, as an example, we enable fade_end interrupt here.
+    ledc_channel.intr_type = LEDC_INTR_FADE_END;
+    //set LEDC mode, from ledc_mode_t
+    ledc_channel.speed_mode = LEDC_LOW_SPEED_MODE;
+    //set LEDC timer source, if different channel use one timer,
+    //the frequency and bit_num of these channels should be the same
+    ledc_channel.timer_sel = LEDC_TIMER_0;
+
+
+    ledc_channel_config(&ledc_channel);
+
+
+    //initialize fade service.
+    ledc_fade_func_install(0);
+
+    // duty range is 0 ~ ((2**bit_num)-1)
+    ledc_set_fade_with_time(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, (LCD_BACKLIGHT_ON_VALUE) ? DUTY_MAX : 0, 500);
+    ledc_fade_start(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, LEDC_FADE_NO_WAIT);
+
+    isBackLightIntialized = true;
+
+
+    printf("Backlight initialization done.\n");
 }

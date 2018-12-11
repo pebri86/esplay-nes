@@ -15,7 +15,6 @@ extern "C"
 
 void display_init();
 void write_nes_frame(const uint8_t * data[]);
-int display_menu();
 
 #ifdef __cplusplus
 }

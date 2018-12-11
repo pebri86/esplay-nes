@@ -253,9 +253,11 @@ static void osd_initinput()
 	gamepad_init();
 }
 
+input_gamepad_state previous_state;
+
 static int ConvertGamepadInput()
 {
-   	input_gamepad_state state;
+	input_gamepad_state state;
     gamepad_read(&state);
 
 	int result = 0;
@@ -295,6 +297,11 @@ static int ConvertGamepadInput()
 	// down
 	if (!state.values[GAMEPAD_INPUT_DOWN])
 			result |= (1 << 6);
+
+	if (!previous_state.values[GAMEPAD_INPUT_MENU] && state.values[GAMEPAD_INPUT_MENU])
+			esp_restart();
+
+	previous_state = state;
 
 	return result;
 }

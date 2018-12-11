@@ -14,7 +14,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
-//#include "../lvgl/lvgl.h"
+#include "../lvgl/lvgl.h"
 
 /*********************
  *      DEFINES
@@ -34,8 +34,10 @@ extern "C" {
  **********************/
 
 void st7735r_init(void);
-//void st7735r_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color);
-//void st7735r_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
+int is_backlight_initialized();
+void backlight_percentage_set(int value);
+void st7735r_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color);
+void st7735r_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
 
 /**********************
  *      MACROS

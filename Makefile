@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := nesemu
+PROJECT_NAME := MicroNes
 
 include $(IDF_PATH)/make/project.mk
 

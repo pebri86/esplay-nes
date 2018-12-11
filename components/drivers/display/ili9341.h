@@ -14,7 +14,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
-//#include "../lvgl/lvgl.h"
+#include "../lvgl/lvgl.h"
 
 /*********************
  *      DEFINES
@@ -34,8 +34,8 @@ extern "C" {
  **********************/
 
 void ili9341_init(void);
-//void ili9431_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color);
-//void ili9431_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
+void ili9341_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t color);
+void ili9341_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
 
 /**********************
  *      MACROS
