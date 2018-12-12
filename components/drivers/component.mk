@@ -9,5 +9,5 @@
 
 #CFLAGS :=
 #COMPONENT_DEPENDS :=
-COMPONENT_SRCDIRS := . audio display input
+COMPONENT_SRCDIRS := . audio display input system
 COMPONENT_ADD_INCLUDEDIRS := $(COMPONENT_SRCDIRS) ..

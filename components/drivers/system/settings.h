@@ -1,10 +1,10 @@
 /**
- * @file ui.h
+ * @file settings.h
  *
  */
 
-#ifndef LV_TEMPL_H
-#define LV_TEMPL_H
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,8 +13,7 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
-#include "../../lv_conf.h"
-#include "lvgl.h"
+#include <stdint.h>
 
 /*********************
  *      DEFINES
@@ -27,10 +26,8 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
- void ui_init(void);
- void ui_create(void);
- int ui_choose_rom();
- void ui_deinit(void);
+int32_t get_backlight_settings();
+void set_backlight_settings(int32_t value);
 
 /**********************
  *      MACROS
@@ -41,4 +38,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 
-#endif /*LV_TEMPL_H*/
+#endif /*SETTINGS_H*/

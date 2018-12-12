@@ -8,19 +8,6 @@
 #include "soc/gpio_struct.h"
 #include "driver/gpio.h"
 #include "display.h"
-#include "disp_spi.h"
-
-#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ILI)
-#include "ili9341.h"
-#define LCD_WIDTH       ILI9341_HOR_RES
-#define LCD_HEIGHT      ILI9341_VER_RES
-#endif
-
-#if (CONFIG_HW_LCD_TYPE == LCD_TYPE_ST)
-#include "st7735r.h"
-#define LCD_WIDTH       ST7735R_HOR_RES
-#define LCD_HEIGHT      ST7735R_VER_RES
-#endif
 
 #define NES_FRAME_WIDTH 256
 #define NES_FRAME_HEIGHT 240
@@ -33,6 +20,12 @@
 
 uint16_t* line[LINE_BUFFERS];
 extern uint16_t myPalette[];
+
+
+void set_display_brightness(int percent)
+{
+    backlight_percentage_set(percent);
+}
 
 static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
 {
