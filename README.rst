@@ -1,6 +1,7 @@
 ESP32-MICRONES, a Nintendo Entertainment System emulator for the ESP32
 ====================================================================
-[[https://raw.githubusercontent.com/pebri86/esp32-micrones/master/hardware/IMG_20181213_092501.jpg|alt=micrones]]
+
+![MicroNES](https://raw.githubusercontent.com/pebri86/esp32-micrones/master/hardware/IMG_20181213_092501.jpg)
 
 This is a port of Nofrendo, a Nintendo Entertainment System emulator. This port is based on Sprite_tm ESP32-NESEMU and is entirely unsupported by Espressif. The code is adapted to my hardware configuration using cheap 160x128 1,8" ST7735R SPI display or ILI9341 (configurable via menuconfig), NES video are scaled to fit display resolution using a simple image scaling alghoritm "smooth Bresenham scaling". Some text maybe hard to read due to scaling but most of rom text are readable.
 
