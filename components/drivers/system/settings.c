@@ -27,8 +27,8 @@
 /**********************
  *  STATIC VARIABLES
  **********************/
-static const char* NvsNamespace = "MicroNES";
-static const char* NvsKey_Backlight = "Backlight";
+static const char* NvsNamespace = "micrones";
+static const char* NvsKey_Backlight = "backlight";
 
 /**********************
  *      MACROS
@@ -39,7 +39,7 @@ static const char* NvsKey_Backlight = "Backlight";
  **********************/
 int32_t get_backlight_settings()
 {
-	// TODO: Move to header
+    // TODO: Move to header
     int result = 30;
 
     // Open

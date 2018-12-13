@@ -29,9 +29,9 @@ void set_display_brightness(int percent)
 
 static uint16_t averageSamples(const uint8_t * data[], int dx, int dy)
 {
-	uint16_t a,b;
-	int y = dy*NES_FRAME_HEIGHT/LCD_HEIGHT;
-	int x = dx*NES_FRAME_WIDTH/LCD_WIDTH;
+    uint16_t a,b;
+    int y = dy*NES_FRAME_HEIGHT/LCD_HEIGHT;
+    int x = dx*NES_FRAME_WIDTH/LCD_WIDTH;
     a = AVERAGE(myPalette[(unsigned char) (data[y][x])],myPalette[(unsigned char) (data[y][x + 1])]);
     b = AVERAGE(myPalette[(unsigned char) (data[y + 1][x])],myPalette[(unsigned char) (data[y + 1][x + 1])]);
     return AVERAGE(a,b);
@@ -41,26 +41,26 @@ void write_nes_frame(const uint8_t * data[])
 {
     short x,y;
     uint16_t a,b;
-	int sending_line=-1;
-	int calc_line=0;
+    int sending_line=-1;
+    int calc_line=0;
     for (y=0; y<LCD_HEIGHT; y++) {
-	    for (x=0; x<LCD_WIDTH; x++) {
+        for (x=0; x<LCD_WIDTH; x++) {
             if (data == NULL)
             {
                 line[calc_line][x] = 0;
             }
             else
             {
-	            a = averageSamples(data, x, y);
-		        b = averageSamples(data, x, y);
-		        line[calc_line][x]=U16x2toU32(a,b);
+                a = averageSamples(data, x, y);
+                b = averageSamples(data, x, y);
+                line[calc_line][x]=U16x2toU32(a,b);
             }
-		}
-		if (sending_line!=-1) send_line_finish();
-		sending_line=calc_line;
-		calc_line=(calc_line==1)?0:1;
-		send_lines(y, LCD_WIDTH, line[sending_line]);
-	}
+        }
+        if (sending_line!=-1) send_line_finish();
+        sending_line=calc_line;
+        calc_line=(calc_line==1)?0:1;
+        send_lines(y, LCD_WIDTH, line[sending_line]);
+    }
     send_line_finish();
 }
 

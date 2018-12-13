@@ -36,7 +36,7 @@
  *  STATIC PROTOTYPES
  **********************/
 static void init_rom_list();
-static void lv_tick_task(void);
+static void IRAM_ATTR lv_tick_task(void);
 static int get_menu_selected();
 static lv_res_t list_release_action(lv_obj_t * btn);
 static lv_obj_t * create_header();
@@ -53,8 +53,7 @@ static lv_group_t *group;
 static int selected = -1;
 static int brightness_value;
 
-char * lines;
-char title[14][100];
+char title[14][100]; /*max rom = 14, max title char = 100*/
 int line_max = 0;
 /**********************
  *      MACROS
@@ -140,12 +139,12 @@ int ui_choose_rom()
     ui_create();
     while(1)
     {
-        vTaskDelay(100/portTICK_PERIOD_MS);
         lv_task_handler();
         if(get_menu_selected() != -1)
         {
             return get_menu_selected();
         }
+        vTaskDelay(10/portTICK_PERIOD_MS);
     }
 
     return 0;
@@ -166,7 +165,7 @@ static lv_res_t list_release_action(lv_obj_t * btn)
     label = lv_list_get_btn_text(btn);
     for(int i=0; i < line_max; i++){
         if (strcmp(title[i],label) == 0)
-        selected = i;
+            selected = i;
     }
 
     return LV_RES_OK;
@@ -177,52 +176,35 @@ static void init_rom_list() {
     spi_flash_mmap_handle_t hrom;
     esp_err_t err;
     part=esp_partition_find_first(0x40, 1, NULL);
-    if(part==0) strcpy(lines, "No Rom List Found\n*");
+    printf("%s: Partition part not found\n", __func__);
     err=esp_partition_mmap(part, 0, 4*1024, SPI_FLASH_MMAP_DATA, (const void**)&romdata, &hrom);
-    if (err!=ESP_OK) {
-        strcpy(lines, "No Rom List Found\n*");
-    }
-    for(int i=0; i < 1000; i++){
-        if(romdata[i] == '*'){
-            lines=calloc(i+5, sizeof(char));
-            break;
-        }
+    if (err!=ESP_OK) {        
+        printf("%s: ROM lists not found\n", __func__);
     }
 
-    for(int i=0; i < 1000; i++){
-        lines[i]=romdata[i];
-        //if(romdata[i]=='\n') lineCounter+=1;
-        if(romdata[i] == '*'){
-            break;
-        }
-    }
-
-    int lineCounter = 0;
+    int line_counter = 0;
     int x = 0;
     for(int i=0; i < 1000; i++){
-        if (lines[i] == '\n')
+        if (romdata[i] == '\n')
         {
-            lineCounter++;
+            line_counter++;
             x = 0;
         }
         else
         {
-
-            if(lines[i] == '*'){
+            if(romdata[i] == '*'){
                 break;
             }
 
-            title[lineCounter][x] = lines[i];
+            title[line_counter][x] = romdata[i];
             x++;
         }
 
-        line_max = lineCounter;
+        line_max = line_counter;
     }
-
-    //free(lines);
 }
 
-static void lv_tick_task(void)
+static void IRAM_ATTR lv_tick_task(void)
 {
     lv_tick_inc(portTICK_RATE_MS);
 }

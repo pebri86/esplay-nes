@@ -29,7 +29,7 @@ void audio_submit(short* stereoAudioBuffer, int frameCount)
 {
     short currentAudioSampleCount = frameCount * 2;
 /*
-    // Convert for built in DA
+    // Convert for built in DAC
     for (short i = 0; i < currentAudioSampleCount; i += 2)
     {
          uint16_t dac0;

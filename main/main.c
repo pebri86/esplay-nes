@@ -19,7 +19,6 @@ char *osd_getromdata() {
     const esp_partition_t* part;
     spi_flash_mmap_handle_t hrom;
     esp_err_t err;
-    nvs_flash_init();
 
     part = esp_partition_find_first(0x41 + rom_partition, 1, NULL);
     if (part == 0) printf("Couldn't find rom part!\n");
@@ -36,7 +35,7 @@ char *osd_getromdata() {
         default:                            partSize = 0; break;
     }
     err = esp_partition_mmap(part, 0, partSize*1024, SPI_FLASH_MMAP_DATA,
-                            (const void**)&romdata, &hrom);
+        (const void**)&romdata, &hrom);
     if (err != ESP_OK) printf("Couldn't map rom part!\n");
     printf("Initialized. ROM@%p\n", romdata);
     return (char*)romdata;
@@ -49,9 +48,6 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 
 int app_main(void)
 {
-    gamepad_init();
-    display_init();
-    
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -61,7 +57,10 @@ int app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK( err );
-
+    
+    gamepad_init();
+    display_init();
+    
     ui_init();
     rom_partition = ui_choose_rom();
     ui_deinit();
