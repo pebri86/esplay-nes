@@ -1,13 +1,13 @@
 1942
 Contra
-Duck Tales
 Duck Tales 2
-Tetris
-*#*
+Duck Tales
 Metal Gear
 Dr.Mario
+Tetris
 Super Mario
 Double Dragon 3
+*#*
 10
 11
 12
@@ -31,12 +31,11 @@ Double Dragon 3
 #   rom03    0x103000			388
 #   rom04    0x164000			132
 #   rom05    0x185000			260
-#	rom06	 0x186000			100
-#	rom07	 0x19f000			100
-#	rom08	 0x1b8000			100
-#	rom09	 0x1d1000			772
-#	rom10	 0x292000			516
-#	rom11	 0x313000			296
-#	rom12	 0x35d000			260
-#	rom13	 0x39e000			260
-#	rom14	 0x3df000			132
+#	rom06	 0x1c6000			100
+#	rom07	 0x1df000			100
+#	rom08	 0x1f8000			100
+#	rom09	 0x211000			772
+#	rom10	 0x2d2000			516
+#	rom11	 0x353000			296
+#	rom12	 0x39d000			260
+#	rom13	 0x3cd000			132

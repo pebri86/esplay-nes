@@ -61,11 +61,11 @@ This includes no Roms. You'll have to flash your own Roms and modify the roms.tx
 Don't change the Layout from roms.txt, otherwise it could happen, that the menu will not load.
 Description on how to change the roms.txt and where to place the Roms are in the file itself.
 
-You can flash up to 14 Roms.
+You can flash up to 13 Roms.
 4x up to 100KB
 2x up to 132KB
-4x up to 260KB
-1x up to 296KB, 388KB, 516KB, 772KB
+3x up to 260KB
+1x up to 296KB, 388KB, 516KB, 772KB,
 
 Flash the Roms with the flashrom.sh script, you'll need to add an argument for flash adress(0x12345) and one for the
 file you want to flash: ./flashrom.sh 0xTargetAdress RomName.nes
