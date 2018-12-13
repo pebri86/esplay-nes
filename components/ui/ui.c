@@ -144,7 +144,7 @@ int ui_choose_rom()
         {
             return get_menu_selected();
         }
-        vTaskDelay(10/portTICK_PERIOD_MS);
+        vTaskDelay(100/portTICK_PERIOD_MS);
     }
 
     return 0;
