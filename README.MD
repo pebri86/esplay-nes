@@ -17,14 +17,14 @@ Display
 
 To display the NES output, please connect a 160x128 1,8" ST7735R or ILI9341 SPI display to the ESP32 in this way:
 
-    Pin | GPIO
-    --- | ----
-    MOSI/SDA | 23
-    CLK | 19
-    CS | 22
-    DC | 5
-    RST | 18
-    BCKL | 17
+Pin | GPIO
+---- | ----
+MOSI/SDA | 23
+CLK | 19
+CS | 22
+DC | 5
+RST | 18
+BCKL | 17
 
 (BCKL = backlight enable - PWM Controlled)
 
@@ -36,17 +36,17 @@ Controller
 
 To control the NES, connect GPIO pins to a common ground pcb gamepad:
 
-    Key | GPIO
-    --- | ----
-    A | 0
-    B | 4
-    START | 12
-    SELECT | 14
-    RIGHT | 27
-    DOWN | 25
-    UP | 33
-    LEFT | 32
-    MENU | 2
+Key | GPIO
+---- | ----
+A | 0
+B | 4
+START | 12
+SELECT | 14
+RIGHT | 27
+DOWN | 25
+UP | 33
+LEFT | 32
+MENU | 2
 
 Also connect the ground line. Same like lcd pins you can change different layout of gamepad pins via menuconfig.
 
