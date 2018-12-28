@@ -38,6 +38,7 @@
 #include "driver/i2s.h"
 #include "sdkconfig.h"
 #include "esp_timer.h"
+#include "esp_log.h"
 
 #include <display.h>
 #include <gamepad.h>
@@ -54,10 +55,10 @@ TimerHandle_t timer;
 //Seemingly, this will be called only once. Should call func with a freq of frequency,
 int osd_installtimer(int frequency, void *func, int funcsize, void *counter, int countersize)
 {
-	printf("Timer install, freq=%d\n", frequency);
-	timer=xTimerCreate("nes",configTICK_RATE_HZ/frequency, pdTRUE, NULL, func);
-	xTimerStart(timer, 0);
-   return 0;
+    printf("Timer install, freq=%d\n", frequency);
+    timer=xTimerCreate("nes",configTICK_RATE_HZ/frequency, pdTRUE, NULL, func);
+    xTimerStart(timer, 0);
+    return 0;
 }
 
 
@@ -70,59 +71,59 @@ QueueHandle_t queue;
 static short *audio_frame;
 #endif
 
-static void do_audio_frame() {
+void do_audio_frame() {
 
 #if CONFIG_SOUND_ENA
-	int left=DEFAULT_SAMPLERATE/NES_REFRESH_RATE;
-	while(left) {
-		int n=DEFAULT_FRAGSIZE;
-		if (n>left) n=left;
-		audio_callback(audio_frame, n); //get more data
-		//16 bit mono -> 32-bit (16 bit r+l)
-		for (int i=n-1; i>=0; i--) {
-			//int sample = (int)audio_frame[i];
+    int left=DEFAULT_SAMPLERATE/NES_REFRESH_RATE;
+    while(left) {
+        int n=DEFAULT_FRAGSIZE;
+        if (n>left) n=left;
+        audio_callback(audio_frame, n); //get more data
+        //16 bit mono -> 32-bit (16 bit r+l)
+        for (int i=n-1; i>=0; i--) {
+            //int sample = (int)audio_frame[i];
 
-			//audio_frame[i*2]= (short)sample;
+            //audio_frame[i*2]= (short)sample;
             //audio_frame[i*2+1] = (short)sample;
-			uint16_t whatever =audio_frame[i];
-			int volShift=1;//getVolume();
-			audio_frame[i*2+1]=whatever>>(8-volShift);//audio_frame[i];
-			audio_frame[i*2]=whatever>>(8-volShift);//audio_frame[i];
-		}
+            uint16_t whatever =audio_frame[i];
+            int volShift=1;//getVolume();
+            audio_frame[i*2+1]=whatever>>(8-volShift);//audio_frame[i];
+            audio_frame[i*2]=whatever>>(8-volShift);//audio_frame[i];
+        }
 
         audio_submit(audio_frame, n);
-		left-=n;
-	}
+        left-=n;
+    }
 #endif
 }
 
 void osd_setsound(void (*playfunc)(void *buffer, int length))
 {
    //Indicates we should call playfunc() to get more data.
-	audio_callback = playfunc;
+    audio_callback = playfunc;
 }
 
 static void osd_stopsound(void)
 {
-	audio_callback = NULL;
+    audio_callback = NULL;
 }
 
 
 static int osd_init_sound(void)
 {
 #if CONFIG_SOUND_ENA
-	audio_frame=malloc(4*DEFAULT_FRAGSIZE);
-	audio_init(DEFAULT_SAMPLERATE);
+    audio_frame=malloc(4*DEFAULT_FRAGSIZE);
+    audio_init(DEFAULT_SAMPLERATE);
 #endif
-	audio_callback = NULL;
+    audio_callback = NULL;
 
-	return 0;
+    return 0;
 }
 
 void osd_getsoundinfo(sndinfo_t *info)
 {
-	info->sample_rate = DEFAULT_SAMPLERATE;
-	info->bps = 16;
+    info->sample_rate = DEFAULT_SAMPLERATE;
+    info->bps = 16;
 }
 
 /*
@@ -160,9 +161,9 @@ bitmap_t *myBitmap;
 
 void osd_getvideoinfo(vidinfo_t *info)
 {
-	info->default_width = DEFAULT_FRAME_WIDTH;
-	info->default_height = DEFAULT_FRAME_HEIGHT;
-	info->driver = &sdlDriver;
+    info->default_width = DEFAULT_FRAME_WIDTH;
+    info->default_height = DEFAULT_FRAME_HEIGHT;
+    info->driver = &sdlDriver;
 }
 
 /* flip between full screen and windowed */
@@ -173,7 +174,7 @@ void osd_togglefullscreen(int code)
 /* initialise video */
 static int init(int width, int height)
 {
-	return 0;
+    return 0;
 }
 
 static void shutdown(void)
@@ -183,7 +184,7 @@ static void shutdown(void)
 /* set a video mode */
 static int set_mode(int width, int height)
 {
-	return 0;
+    return 0;
 }
 
 uint16_t myPalette[256];
@@ -191,16 +192,16 @@ uint16_t myPalette[256];
 /* copy nes palette over to hardware */
 static void set_palette(rgb_t *pal)
 {
-	uint16 c;
+    uint16 c;
 
-	int i;
+    int i;
 
-	for (i = 0; i < 256; i++)
-	{
-		c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
-      	//myPalette[i]=(c>>8)|((c&0xff)<<8);
-		myPalette[i]=c;
-	}
+    for (i = 0; i < 256; i++)
+    {
+        c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
+        //myPalette[i]=(c>>8)|((c&0xff)<<8);
+        myPalette[i]=c;
+    }
 
 }
 
@@ -214,33 +215,31 @@ static void clear(uint8 color)
 static bitmap_t *lock_write(void)
 {
 //   SDL_LockSurface(mySurface);
-	myBitmap = bmp_createhw((uint8*)fb, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_WIDTH*2);
-	return myBitmap;
+    myBitmap = bmp_createhw((uint8*)fb, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_WIDTH*2);
+    return myBitmap;
 }
 
 /* release the resource */
 static void free_write(int num_dirties, rect_t *dirty_rects)
 {
-	bmp_destroy(&myBitmap);
+    bmp_destroy(&myBitmap);
 }
 
 
 static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
-	xQueueSend(vidQueue, &bmp, 0);
-	do_audio_frame();
+    xQueueSend(vidQueue, &bmp, 0);
+    do_audio_frame();
 }
 
 
 //This runs on core 1.
 static void videoTask(void *arg) {
-	bitmap_t *bmp=NULL;
-	while(1) {
-		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
-		write_nes_frame((const uint8_t **)bmp->line);
-
-		// delay
-		// vTaskDelay(10 / portTICK_PERIOD_MS);
-	}
+    bitmap_t *bmp=NULL;
+    while(1) {
+        xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
+        write_nes_frame((const uint8_t **)bmp->line);
+        //ESP_LOGI("DEBUG", "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
+    }
 }
 
 
@@ -250,96 +249,99 @@ static void videoTask(void *arg) {
 
 static void osd_initinput()
 {
-	gamepad_init();
+    //gamepad_init();
 }
 
 input_gamepad_state previous_state;
 
 static int ConvertGamepadInput()
 {
-	input_gamepad_state state;
+    input_gamepad_state state;
     gamepad_read(&state);
 
-	int result = 0;
+    int result = 0;
 
-	// A
-	if (!state.values[GAMEPAD_INPUT_A])
-	{
-		result |= (1 << 13);
-	}
+    // A
+    if (!state.values[GAMEPAD_INPUT_A])
+    {
+        result |= (1 << 13);
+    }
 
-	// B
-	if (!state.values[GAMEPAD_INPUT_B])
-	{
-		result |= (1 << 14);
-	}
+    // B
+    if (!state.values[GAMEPAD_INPUT_B])
+    {
+        result |= (1 << 14);
+    }
 
-	// select
-	if (!state.values[GAMEPAD_INPUT_SELECT])
-		result |= (1 << 0);
+    // select
+    if (!state.values[GAMEPAD_INPUT_SELECT])
+        result |= (1 << 0);
 
-	// start
-	if (!state.values[GAMEPAD_INPUT_START])
-		result |= (1 << 3);
+    // start
+    if (!state.values[GAMEPAD_INPUT_START])
+        result |= (1 << 3);
 
-	// right
-	if (!state.values[GAMEPAD_INPUT_RIGHT])
-			result |= (1 << 5);
+    // right
+    if (!state.values[GAMEPAD_INPUT_RIGHT])
+        result |= (1 << 5);
 
-	// left
-	if (!state.values[GAMEPAD_INPUT_LEFT])
-			result |= (1 << 7);
+    // left
+    if (!state.values[GAMEPAD_INPUT_LEFT])
+        result |= (1 << 7);
 
-	// up
-	if (!state.values[GAMEPAD_INPUT_UP])
-			result |= (1 << 4);
+    // up
+    if (!state.values[GAMEPAD_INPUT_UP])
+        result |= (1 << 4);
 
-	// down
-	if (!state.values[GAMEPAD_INPUT_DOWN])
-			result |= (1 << 6);
+    // down
+    if (!state.values[GAMEPAD_INPUT_DOWN])
+        result |= (1 << 6);
 
-	if (!previous_state.values[GAMEPAD_INPUT_MENU] && state.values[GAMEPAD_INPUT_MENU])
-			esp_restart();
+    if (!previous_state.values[GAMEPAD_INPUT_MENU] && state.values[GAMEPAD_INPUT_MENU])
+    {
+        audio_terminate();
+        esp_restart();
+    }
 
-	previous_state = state;
+    previous_state = state;
 
-	return result;
+    return result;
 }
 
 void osd_getinput(void)
 {
-	const int ev[16]={
-		event_joypad1_select,
-		0,
-		0,
-		event_joypad1_start,
-		event_joypad1_up,
-		event_joypad1_right,
-		event_joypad1_down,
-		event_joypad1_left,
-		0,
-		0,
-		0,
-		0,
-		event_soft_reset,
-		event_joypad1_a,
-		event_joypad1_b,
-		event_hard_reset
-	};
-	static int oldb=0xffff;
-	int b=ConvertGamepadInput();
-	int chg=b^oldb;
-	int x;
-	oldb=b;
-	event_t evh;
-	for (x=0; x<16; x++) {
-		if (chg&1) {
-			evh=event_get(ev[x]);
-			if (evh) evh((b&1)?INP_STATE_BREAK:INP_STATE_MAKE);
-		}
-		chg>>=1;
-		b>>=1;
-	}
+    const int ev[16]={
+        event_joypad1_select,
+        0,
+        0,
+        event_joypad1_start,
+        event_joypad1_up,
+        event_joypad1_right,
+        event_joypad1_down,
+        event_joypad1_left,
+        0,
+        0,
+        0,
+        0,
+        event_soft_reset,
+        event_joypad1_a,
+        event_joypad1_b,
+        event_hard_reset
+    };
+    static int oldb=0xffff;
+    int b=ConvertGamepadInput();
+    int chg=b^oldb;
+    int x;
+    oldb=b;
+    event_t evh;
+    for (x=0; x<16; x++) {
+        if (chg&1) {
+            evh=event_get(ev[x]);
+            if (evh) evh((b&1)?INP_STATE_BREAK:INP_STATE_MAKE);
+        }
+        chg>>=1;
+        b>>=1;
+    }
 }
 
 static void osd_freeinput(void)
@@ -357,13 +359,13 @@ void osd_getmouse(int *x, int *y, int *button)
 /* this is at the bottom, to eliminate warnings */
 void osd_shutdown()
 {
-	osd_stopsound();
-	osd_freeinput();
+    osd_stopsound();
+    osd_freeinput();
 }
 
 static int logprint(const char *string)
 {
-	return printf("%s", string);
+    return printf("%s", string);
 }
 
 /*
@@ -372,15 +374,14 @@ static int logprint(const char *string)
 
 int osd_init()
 {
-	log_chain_logfunc(logprint);
+    log_chain_logfunc(logprint);
 
-	if (osd_init_sound())
-		return -1;
+    if (osd_init_sound())
+        return -1;
 
-	//display_init();
-	write_nes_frame(NULL);
-	vidQueue=xQueueCreate(1, sizeof(bitmap_t *));
-	xTaskCreatePinnedToCore(&videoTask, "videoTask", 2048, NULL, 5, NULL, 1);
-	osd_initinput();
-	return 0;
+    write_nes_frame(NULL);
+    vidQueue=xQueueCreate(1, sizeof(bitmap_t *));
+    xTaskCreatePinnedToCore(&videoTask, "videoTask", 2048, NULL, 5, NULL, 1);
+    osd_initinput();
+    return 0;
 }

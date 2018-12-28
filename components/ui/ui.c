@@ -10,7 +10,6 @@
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_log.h"
-#include "esp_freertos_hooks.h"
 #include "esp_event_loop.h"
 #include "esp_partition.h"
 #include "nvs_flash.h"
@@ -36,25 +35,35 @@
  *  STATIC PROTOTYPES
  **********************/
 static void init_rom_list();
-static void IRAM_ATTR lv_tick_task(void);
+//static void IRAM_ATTR lv_tick_task(void);
 static int get_menu_selected();
 static lv_res_t list_release_action(lv_obj_t * btn);
-static lv_obj_t * create_header();
+static void create_header();
+static void create_footer();
 static void create_list_page(lv_obj_t * parent);
 static lv_res_t slider_action(lv_obj_t *slider);
 static lv_res_t btn_click_action(lv_obj_t *btn);
 static void create_settings_page(lv_obj_t *parent);
+static void ui_task(void *arg);
+static void lv_task(void *arg);
 
+LV_IMG_DECLARE(img_bubble_pattern);
 /**********************
  *  STATIC VARIABLES
  **********************/
 static lv_indev_t * indev;
 static lv_group_t *group;
+static lv_obj_t *header;
+static lv_obj_t *footer;
 static int selected = -1;
 static int brightness_value;
+static bool ui_task_is_running = false;
+static bool lv_task_is_running = false;
+static int tabSize;
 
 char title[14][100]; /*max rom = 14, max title char = 100*/
 int line_max = 0;
+char* VERSION = NULL;
 /**********************
  *      MACROS
  **********************/
@@ -64,35 +73,42 @@ int line_max = 0;
  **********************/
 void ui_init()
 {
-    lv_init();
-    lv_disp_drv_t disp;
-    lv_disp_drv_init(&disp);
-    disp.disp_flush = st7735r_flush;
-    lv_disp_drv_register(&disp);
-    esp_register_freertos_tick_hook(lv_tick_task);
+    // Start background polling
+    xTaskCreatePinnedToCore(&ui_task, "ui_task", 1024 * 2, NULL, 5, NULL, 0);
 
-    lv_indev_drv_t indev_drv;
-    lv_indev_drv_init(&indev_drv);
-    indev_drv.type = LV_INDEV_TYPE_KEYPAD;
-    indev_drv.read = lv_keypad_read;
-    indev = lv_indev_drv_register(&indev_drv);
-    lv_indev_init();
-
-    ESP_LOGI(TAG_DEBUG, "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
+    printf("ui_init done.\n");
 }
 
 void ui_create(void)
 {
+    const char* VER_PREFIX = "Ver: ";
+    size_t ver_size = strlen(VER_PREFIX) + strlen(COMPILEDATE) + 1 + strlen(GITREV) + 1;
+    VERSION = malloc(ver_size);
+    if (!VERSION) abort();
+
+    strcpy(VERSION, VER_PREFIX);
+    strcat(VERSION, COMPILEDATE);
+    strcat(VERSION, "-");
+    strcat(VERSION, GITREV);
+
     init_rom_list();
 
     lv_obj_t * scr = lv_page_create(NULL, NULL);
     lv_scr_load(scr);
 
+#if 1
+    lv_obj_t *wp = lv_img_create(lv_scr_act(), NULL);
+    lv_img_set_src(wp, &img_bubble_pattern);
+    lv_obj_set_width(wp, LV_HOR_RES * 4);
+    lv_obj_set_protect(wp, LV_PROTECT_POS);
+#endif
+
     /*create group for keypad input*/
     group = lv_group_create();
     lv_indev_set_group(indev, group);
 
-    lv_obj_t * header = create_header();
+    create_header();
+    create_footer();
 
     static lv_style_t style_tv_btn_bg;
     lv_style_copy(&style_tv_btn_bg, &lv_style_plain);
@@ -115,10 +131,15 @@ void ui_create(void)
     style_tv_btn_pr.text.color = LV_COLOR_GRAY;
 
     lv_obj_t *tv = lv_tabview_create(scr, NULL);
-    lv_obj_align(tv, header, LV_ALIGN_IN_TOP_LEFT, ((lv_obj_get_width(header)-LV_HOR_RES)/2), 10);
-
+    lv_obj_align(tv, header, LV_ALIGN_IN_TOP_LEFT, ((lv_obj_get_width(header)-LV_HOR_RES)/2), 10);    
+    lv_obj_set_size(tv, LV_HOR_RES, LV_VER_RES - (lv_obj_get_height(header) + lv_obj_get_height(footer)));
+#if 1
+    lv_obj_set_parent(wp, ((lv_tabview_ext_t *) tv->ext_attr)->content);
+    lv_obj_set_pos(wp, 0, -5);
+#endif
     lv_obj_t *tab1 = lv_tabview_add_tab(tv, "Play");
     lv_obj_t *tab2 = lv_tabview_add_tab(tv, "Settings");
+    tabSize = lv_obj_get_height(tab1);
 
     lv_tabview_set_style(tv, LV_TABVIEW_STYLE_BG, &style_tv_btn_bg);
     lv_tabview_set_style(tv, LV_TABVIEW_STYLE_BTN_BG, &style_tv_btn_bg);
@@ -136,49 +157,94 @@ void ui_create(void)
 
 int ui_choose_rom()
 {
-    ui_create();
-    while(1)
-    {
-        lv_task_handler();
-        if(get_menu_selected() != -1)
-        {
-            return get_menu_selected();
-        }
-        vTaskDelay(100/portTICK_PERIOD_MS);
-    }
-
-    return 0;
+    return get_menu_selected();
 }
 
-void ui_deinit()
-{
-    lv_obj_del(lv_scr_act());
-    esp_deregister_freertos_tick_hook(lv_tick_task);
-    ESP_LOGI(TAG_DEBUG, "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
-}
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+static void lv_task(void *arg)
+{
+    printf("lv_task started.\n");
+    lv_task_is_running = true;
+    while(lv_task_is_running)
+    {
+        lv_tick_inc(portTICK_RATE_MS);
+        vTaskDelay(1);
+    }
+
+    /* Remove the task from scheduler*/
+    vTaskDelete(NULL);
+    printf("lv_task done.\n");
+    /* Never return*/
+    while (1) { vTaskDelay(1);}
+}
+
+static void ui_task(void *arg)
+{
+    ui_task_is_running = true;
+
+    lv_init();
+    lv_disp_drv_t disp;
+    lv_disp_drv_init(&disp);
+    disp.disp_flush = st7735r_flush;
+    lv_disp_drv_register(&disp);
+    xTaskCreatePinnedToCore(&lv_task, "lv_task", 1024 * 2, NULL, 5, NULL, 0);
+
+    lv_indev_drv_t indev_drv;
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_KEYPAD;
+    indev_drv.read = lv_keypad_read;
+    indev = lv_indev_drv_register(&indev_drv);
+    lv_indev_init();
+    ESP_LOGI(TAG_DEBUG, "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
+
+    ui_create();
+
+    while(ui_task_is_running)
+    {
+        lv_task_handler();
+        vTaskDelay(100/portTICK_PERIOD_MS);
+    }
+
+    lv_obj_del(lv_scr_act());
+    lv_task_is_running = false;
+    ESP_LOGI(TAG_DEBUG, "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
+    printf("ui_task done.\n");
+    /* Remove the task from scheduler*/
+    vTaskDelete(NULL);
+
+    /* Never return*/
+    while (1) { vTaskDelay(1);}
+}
+
 static lv_res_t list_release_action(lv_obj_t * btn)
 {
     const char * label;
     label = lv_list_get_btn_text(btn);
     for(int i=0; i < line_max; i++){
         if (strcmp(title[i],label) == 0)
+        {
             selected = i;
+            /*exit task after rom selected*/
+            ui_task_is_running = false;
+        }
     }
 
     return LV_RES_OK;
 }
+
 static void init_rom_list() {
     char* romdata;
     const esp_partition_t* part;
     spi_flash_mmap_handle_t hrom;
     esp_err_t err;
     part=esp_partition_find_first(0x40, 1, NULL);
-    printf("%s: Partition part not found\n", __func__);
+    if (part == 0) {
+        printf("%s: Partition part not found\n", __func__);
+    }
     err=esp_partition_mmap(part, 0, 4*1024, SPI_FLASH_MMAP_DATA, (const void**)&romdata, &hrom);
-    if (err!=ESP_OK) {        
+    if (err!=ESP_OK) {
         printf("%s: ROM lists not found\n", __func__);
     }
 
@@ -204,19 +270,14 @@ static void init_rom_list() {
     }
 }
 
-static void IRAM_ATTR lv_tick_task(void)
-{
-    lv_tick_inc(portTICK_RATE_MS);
-}
-
 static int get_menu_selected()
 {
     return selected;
 }
 
-static lv_obj_t * create_header()
+static void create_header()
 {
-    lv_obj_t * header = lv_label_create(lv_scr_act(), NULL); /*First parameters (scr) is the parent*/
+    header = lv_label_create(lv_scr_act(), NULL); /*First parameters (scr) is the parent*/
     lv_label_set_text(header, "MicroNES");  /*Set the text*/
     lv_obj_align(header, lv_scr_act(), LV_ALIGN_IN_TOP_MID, 0, 0);
 
@@ -233,8 +294,13 @@ static lv_obj_t * create_header()
     lv_obj_t * clock = lv_label_create(lv_scr_act(), NULL); /*First parameters (scr) is the parent*/
     lv_label_set_text(clock, "15:00"); /*Set the text*/
     lv_obj_align(clock, header, LV_ALIGN_IN_TOP_LEFT, ((lv_obj_get_width(header)-LV_HOR_RES)/2)+5, 0);
+}
 
-    return header;
+static void create_footer()
+{  
+    footer = lv_label_create(lv_scr_act(), NULL); /*First parameters (scr) is the parent*/
+    lv_label_set_text(footer, VERSION);  /*Set the text*/
+    lv_obj_align(footer, lv_scr_act(), LV_ALIGN_IN_BOTTOM_MID, 0, 0);
 }
 
 static void create_list_page(lv_obj_t * parent)
@@ -248,7 +314,7 @@ static void create_list_page(lv_obj_t * parent)
 
     /*Crate the list*/
     lv_obj_t * list1 = lv_list_create(parent, NULL);
-    lv_obj_set_size(list1, LV_HOR_RES, LV_VER_RES - 30);
+    lv_obj_set_size(list1, LV_HOR_RES, tabSize);
     lv_list_set_style(list1, LV_LIST_STYLE_BG, &lv_style_transp_tight);
     lv_list_set_style(list1, LV_LIST_STYLE_SCRL, &lv_style_transp_tight);
     lv_obj_align(list1, parent, LV_ALIGN_IN_TOP_LEFT, ((lv_obj_get_width(parent)-LV_HOR_RES)/2), 0);
@@ -256,7 +322,7 @@ static void create_list_page(lv_obj_t * parent)
     /*Add list elements*/
     for(int i=0; i < line_max; i++){
         lv_list_add(list1, NULL, title[i], list_release_action);
-        printf("%s\n", title[i]);
+        printf("%s", title[i]);
     }
 
     lv_group_add_obj(group, list1);
@@ -277,7 +343,7 @@ static void create_settings_page(lv_obj_t *parent)
 
     /*Create slider brightness label*/
     lv_obj_t * label_brightness = lv_label_create(parent, NULL); /*First parameters (scr) is the parent*/
-    lv_obj_set_style(label_brightness, &style_txt); 
+    lv_obj_set_style(label_brightness, &style_txt);
     lv_label_set_text(label_brightness, "Brightness");  /*Set the text*/
     lv_obj_align(label_brightness, parent, LV_ALIGN_IN_TOP_MID, 0, 10);
 

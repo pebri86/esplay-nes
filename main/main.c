@@ -63,7 +63,14 @@ int app_main(void)
     
     ui_init();
     rom_partition = ui_choose_rom();
-    ui_deinit();
+
+    /*wait for selected rom*/ 
+    while(rom_partition == -1)
+    {
+        vTaskDelay(10);
+        rom_partition = ui_choose_rom();
+    }
+
     printf("NoFrendo start!\n");
     nofrendo_main(0, NULL);
     printf("NoFrendo died? WtF?\n");

@@ -6,13 +6,11 @@ Metal Gear
 Dr.Mario
 Tetris
 Super Mario
-Double Dragon 3
+Donkey Kong
 *#*
-10
 11
 12
 13
-14
 
 #	Don't change the Layout, otherwise the Menu won't show up
 #	in the right form or the whole emulator might crash!!!
