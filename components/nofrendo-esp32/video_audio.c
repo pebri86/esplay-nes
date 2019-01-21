@@ -225,12 +225,10 @@ static void free_write(int num_dirties, rect_t *dirty_rects)
     bmp_destroy(&myBitmap);
 }
 
-
 static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
     xQueueSend(vidQueue, &bmp, 0);
     do_audio_frame();
 }
-
 
 //This runs on core 1.
 static void videoTask(void *arg) {

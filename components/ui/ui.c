@@ -74,7 +74,7 @@ char* VERSION = NULL;
 void ui_init()
 {
     // Start background polling
-    xTaskCreatePinnedToCore(&ui_task, "ui_task", 1024 * 2, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(&ui_task, "ui_task", 1024 * 3, NULL, 5, NULL, 0);
 
     printf("ui_init done.\n");
 }
