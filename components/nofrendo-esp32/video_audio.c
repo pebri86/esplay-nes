@@ -81,14 +81,10 @@ void do_audio_frame() {
         audio_callback(audio_frame, n); //get more data
         //16 bit mono -> 32-bit (16 bit r+l)
         for (int i=n-1; i>=0; i--) {
-            //int sample = (int)audio_frame[i];
+            int sample = (int)audio_frame[i];
 
-            //audio_frame[i*2]= (short)sample;
-            //audio_frame[i*2+1] = (short)sample;
-            uint16_t whatever =audio_frame[i];
-            int volShift=1;//getVolume();
-            audio_frame[i*2+1]=whatever>>(8-volShift);//audio_frame[i];
-            audio_frame[i*2]=whatever>>(8-volShift);//audio_frame[i];
+            audio_frame[i*2]= (short)sample;
+            audio_frame[i*2+1] = (short)sample;
         }
 
         audio_submit(audio_frame, n);
