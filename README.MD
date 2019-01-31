@@ -24,17 +24,17 @@ Place ROMS in folder named 'roms/nes' on root of sdcard, create following struct
 
  	--esplay
 
-   	|	|
+   		|
 
-   	|	--data (this to place state file as .sav)
+   		--data (this to place state file as .sav)
 
-		|
+			|
 		
-		--gbc
+			--gbc
 		
-		|
+			|
 		
-		--nes
+			--nes
 
 Compiling
 ---------
