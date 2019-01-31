@@ -3,14 +3,14 @@
 **
 **
 ** This program is free software; you can redistribute it and/or
-** modify it under the terms of version 2 of the GNU Library General 
+** modify it under the terms of version 2 of the GNU Library General
 ** Public License as published by the Free Software Foundation.
 **
-** This program is distributed in the hope that it will be useful, 
+** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU 
-** Library General Public License for more details.  To obtain a 
-** copy of the GNU Library General Public License, write to the Free 
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+** Library General Public License for more details.  To obtain a
+** copy of the GNU Library General Public License, write to the Free
 ** Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 **
 ** Any permitted reproduction of these routines, in whole or in part,
@@ -69,7 +69,7 @@ static void func_event_togglepause(int code)
 
 static void func_event_soft_reset(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       nes_reset(SOFT_RESET);
 }
 
@@ -93,14 +93,14 @@ static void func_event_toggle_frameskip(int code)
 
 static void func_event_state_save(int code)
 {
-   if (INP_STATE_MAKE == code)
-      state_save();
+   // if (INP_STATE_MAKE == code)
+   //    state_save();
 }
 
 static void func_event_state_load(int code)
 {
-   if (INP_STATE_MAKE == code)
-      state_load();
+   // if (INP_STATE_MAKE == code)
+   //    state_load();
 }
 
 static void func_event_state_slot_0(int code)
@@ -111,13 +111,13 @@ static void func_event_state_slot_0(int code)
 
 static void func_event_state_slot_1(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       state_setslot(1);
 }
 
 static void func_event_state_slot_2(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       state_setslot(2);
 }
 
@@ -135,19 +135,19 @@ static void func_event_state_slot_4(int code)
 
 static void func_event_state_slot_5(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       state_setslot(5);
 }
 
 static void func_event_state_slot_6(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       state_setslot(6);
 }
 
 static void func_event_state_slot_7(int code)
 {
-   if (INP_STATE_MAKE == code) 
+   if (INP_STATE_MAKE == code)
       state_setslot(7);
 }
 
@@ -489,7 +489,7 @@ static event_t nes_events[] =
    func_event_palette_set_shady,
    /* joypad 1 */
    func_event_joypad1_a,
-   func_event_joypad1_b, 
+   func_event_joypad1_b,
    func_event_joypad1_start,
    func_event_joypad1_select,
    func_event_joypad1_up,
