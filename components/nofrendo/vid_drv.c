@@ -3,14 +3,14 @@
 **
 **
 ** This program is free software; you can redistribute it and/or
-** modify it under the terms of version 2 of the GNU Library General 
+** modify it under the terms of version 2 of the GNU Library General
 ** Public License as published by the Free Software Foundation.
 **
-** This program is distributed in the hope that it will be useful, 
+** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU 
-** Library General Public License for more details.  To obtain a 
-** copy of the GNU Library General Public License, write to the Free 
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+** Library General Public License for more details.  To obtain a
+** copy of the GNU Library General Public License, write to the Free
 ** Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 **
 ** Any permitted reproduction of these routines, in whole or in part,
@@ -22,7 +22,7 @@
 ** Video driver
 ** $Id: vid_drv.c,v 1.2 2001/04/27 14:37:11 neil Exp $
 */
-
+#include <stdlib.h>
 #include <string.h>
 #include <noftypes.h>
 #include <log.h>
@@ -30,6 +30,7 @@
 #include <vid_drv.h>
 #include <gui.h>
 #include <osd.h>
+
 
 /* hardware surface */
 static bitmap_t *screen = NULL;
@@ -75,10 +76,10 @@ INLINE int vid_memcmp(const void *p1, const void *p2, int len)
    {
       uint8 *b1 = (uint8 *) p1;
       uint8 *b2 = (uint8 *) p2;
-      
+
       DUFFS_DEVICE(if (*b1++ != *b2++) return -1, len);
    }
-   
+
    return 0;
 }
 
@@ -132,7 +133,7 @@ void vid_setpalette(rgb_t *p)
 }
 
 /* blits a bitmap onto primary buffer */
-void vid_blit(bitmap_t *bitmap, int src_x, int src_y, int dest_x, int dest_y, 
+void vid_blit(bitmap_t *bitmap, int src_x, int src_y, int dest_x, int dest_y,
               int width, int height)
 {
    int bitmap_pitch, primary_pitch;
@@ -182,7 +183,7 @@ void vid_blit(bitmap_t *bitmap, int src_x, int src_y, int dest_x, int dest_y,
    if (dest_x >= primary_buffer->width)
       return;
    if (dest_x + width > primary_buffer->width)
-      width = primary_buffer->width - dest_x;   
+      width = primary_buffer->width - dest_x;
 
    src_ptr = bitmap->line[src_y] + src_x;
    dest_ptr = primary_buffer->line[dest_y] + dest_x;
@@ -234,7 +235,7 @@ static void vid_blitscreen(int num_dirties, rect_t *dirty_rects)
       blit_width = screen->width;
       dest_x = 0;
    }
-   
+
    /* should we just copy the entire screen? */
    if (-1 == num_dirties)
    {
@@ -263,7 +264,7 @@ static void vid_blitscreen(int num_dirties, rect_t *dirty_rects)
             height = blit_height;
 
          j = 0;
-         DUFFS_DEVICE(  
+         DUFFS_DEVICE(
          {
             vid_memcpy(screen->line[dest_y + rects->y + j] + rects->x + dest_x,
                        primary_buffer->line[src_y + rects->y + j] + rects->x + src_x,
@@ -301,15 +302,15 @@ INLINE int calc_dirties(rect_t *list)
 
       j = line_offset;
       DUFFS_DEVICE(
-      { 
-         if (vid_memcmp(back_buffer->line[j], primary_buffer->line[j], 
+      {
+         if (vid_memcmp(back_buffer->line[j], primary_buffer->line[j],
                         CHUNK_WIDTH))
-         { 
-            dirty = true; 
-            break; 
-         } 
+         {
+            dirty = true;
+            break;
+         }
 
-         j++; 
+         j++;
       }, CHUNK_HEIGHT);
 
       if (true == dirty)
@@ -372,7 +373,10 @@ int vid_setmode(int width, int height)
 
    primary_buffer = bmp_create(width, height, 0); /* no overdraw */
    if (NULL == primary_buffer)
-      return -1;
+   {
+       abort();
+      //return -1;
+  }
 
    /* Create our backbuffer */
 #if 0

@@ -36,7 +36,7 @@
 
 /* Visible (NTSC) screen height */
 #ifndef NES_VISIBLE_HEIGHT
-#define  NES_VISIBLE_HEIGHT   240
+#define  NES_VISIBLE_HEIGHT   224
 #endif /* !NES_VISIBLE_HEIGHT */
 #define  NES_SCREEN_WIDTH     256
 #define  NES_SCREEN_HEIGHT    240
@@ -70,10 +70,7 @@ typedef struct nes_s
    rominfo_t *rominfo;
 
    /* video buffer */
-   /* For the ESP32, it costs too much memory to render to a separate buffer and blit that to the main buffer.
-      Instead, the code has been modified to directly grab the primary buffer from the video subsystem and render
-      there, saving us about 64K of memory. */
-//   bitmap_t *vidbuf; 
+   bitmap_t *vidbuf;
 
    bool fiq_occurred;
    uint8 fiq_state;

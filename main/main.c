@@ -1,79 +1,152 @@
 #include "freertos/FreeRTOS.h"
+#include "esp_wifi.h"
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_log.h"
 #include "esp_event_loop.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
 #include "nofrendo.h"
 #include "esp_partition.h"
+#include "esp_spiffs.h"
+
+#include "esp_err.h"
+#include "esp_log.h"
+#include "esp_vfs_fat.h"
+#include "driver/sdmmc_host.h"
+#include "driver/sdspi_host.h"
+#include "sdmmc_cmd.h"
+#include <dirent.h>
+
+
+#include "settings.h"
+#include "power.h"
+#include "sdcard.h"
 #include "display.h"
-#include "st7735r.h"
 #include "gamepad.h"
+#include "audio.h"
 #include "ui.h"
 
-int rom_partition;
+const char* SD_BASE_PATH = "/sd";
+static char* ROM_DATA = (char*)0x3f800000;
 
-char *osd_getromdata() {
-    char* romdata;
-    const esp_partition_t* part;
-    spi_flash_mmap_handle_t hrom;
-    esp_err_t err;
-
-    part = esp_partition_find_first(0x41 + rom_partition, 1, NULL);
-    if (part == 0) printf("Couldn't find rom part!\n");
-
-    int partSize;
-    switch(rom_partition) {
-        case 0: case 5: case 6: case 7:     partSize = 100; break;
-        case 1: case 4: case 11: case 12:   partSize = 260; break;
-        case 2:                             partSize = 388; break;
-        case 3: case 13:                    partSize = 132; break;
-        case 8:                             partSize = 772; break;
-        case 9:                             partSize = 516; break;
-        case 10:                            partSize = 296; break;
-        default:                            partSize = 0; break;
-    }
-    err = esp_partition_mmap(part, 0, partSize*1024, SPI_FLASH_MMAP_DATA,
-        (const void**)&romdata, &hrom);
-    if (err != ESP_OK) printf("Couldn't map rom part!\n");
-    printf("Initialized. ROM@%p\n", romdata);
-    return (char*)romdata;
-}
-
-esp_err_t event_handler(void *ctx, system_event_t *event)
+char *osd_getromdata()
 {
-    return ESP_OK;
+    printf("Initialized. ROM@%p\n", ROM_DATA);
+    return (char*)ROM_DATA;
 }
+
+
+static const char *TAG = "main";
+
 
 int app_main(void)
 {
-    // Initialize NVS
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK( err );
-    
-    gamepad_init();
-    display_init();
-    
-    ui_init();
-    rom_partition = ui_choose_rom();
+    printf("nesemu (%s-%s).\n", COMPILEDATE, GITREV);
 
-    /*wait for selected rom*/ 
-    while(rom_partition == -1)
+    nvs_flash_init();
+
+    system_init();
+
+    esp_err_t ret;
+
+
+    char* fileName;
+
+    char* romName = get_rom_name_settings();
+    if (romName)
     {
-        vTaskDelay(10);
-        rom_partition = ui_choose_rom();
+        fileName = system_util_GetFileName(romName);
+        if (!fileName) abort();
+
+        free(romName);
     }
+    else
+    {
+        fileName = "nesemu-show3.nes";
+    }
+
+
+    int startHeap = esp_get_free_heap_size();
+    printf("A HEAP:0x%x\n", startHeap);
+
+
+    display_init();
+
+    // Joystick.
+    gamepad_init();
+
+    display_prepare();
+
+    set_display_brightness(get_backlight_settings());
+
+    // ui init
+    if(!gpio_get_level(MENU) || get_menu_flag_settings() == 1)
+    {
+      ui_init();
+
+      while(true)
+      {
+        vTaskDelay(100);
+      }
+    }
+
+    // Load ROM
+    char* romPath = get_rom_name_settings();
+    if (!romPath)
+    {
+        printf("osd_getromdata: Reading from flash.\n");
+
+        // copy from flash
+        spi_flash_mmap_handle_t hrom;
+
+        const esp_partition_t* part = esp_partition_find_first(0x40, 0, NULL);
+        if (part == 0)
+        {
+            printf("esp_partition_find_first failed.\n");
+            abort();
+        }
+
+        esp_err_t err = esp_partition_read(part, 0, (void*)ROM_DATA, 0x100000);
+        if (err != ESP_OK)
+        {
+            printf("esp_partition_read failed. size = %x (%d)\n", part->size, err);
+            abort();
+        }
+    }
+    else
+    {
+        printf("osd_getromdata: Reading from sdcard.\n");
+
+        // copy from SD card
+        esp_err_t r = sdcard_open(SD_BASE_PATH);
+        if (r != ESP_OK)
+        {
+            abort();
+        }
+
+        size_t fileSize = sdcard_copy_file_to_memory(romPath, ROM_DATA);
+        printf("app_main: fileSize=%d\n", fileSize);
+        if (fileSize == 0)
+        {
+            abort();
+        }
+
+        r = sdcard_close();
+        if (r != ESP_OK)
+        {
+            abort();
+        }
+
+        free(romPath);
+    }
+
 
     printf("NoFrendo start!\n");
-    nofrendo_main(0, NULL);
-    printf("NoFrendo died? WtF?\n");
+
+    char* args[1] = { fileName };
+    nofrendo_main(1, args);
+
+    printf("NoFrendo died.\n");
     asm("break.n 1");
     return 0;
 }

@@ -33,6 +33,7 @@
 #include <nes.h>
 #include <nes_pal.h>
 #include <nesinput.h>
+#include "nesstate.h"
 #include <osd.h>
 #include <stdint.h>
 #include "driver/i2s.h"
@@ -43,9 +44,11 @@
 #include <display.h>
 #include <gamepad.h>
 #include <audio.h>
+#include "settings.h"
+#include "power.h"
 
-#define DEFAULT_SAMPLERATE      33252*2//32000
-#define DEFAULT_FRAGSIZE        128
+#define DEFAULT_SAMPLERATE      32000
+#define DEFAULT_FRAGSIZE        512
 
 #define DEFAULT_FRAME_WIDTH     256
 #define DEFAULT_FRAME_HEIGHT    NES_VISIBLE_HEIGHT
@@ -66,31 +69,26 @@ int osd_installtimer(int frequency, void *func, int funcsize, void *counter, int
 ** Audio
 */
 static void (*audio_callback)(void *buffer, int length) = NULL;
-#if CONFIG_SOUND_ENA
 QueueHandle_t queue;
 static short *audio_frame;
-#endif
 
 void do_audio_frame() {
-
-#if CONFIG_SOUND_ENA
     int left=DEFAULT_SAMPLERATE/NES_REFRESH_RATE;
     while(left) {
         int n=DEFAULT_FRAGSIZE;
         if (n>left) n=left;
-        audio_callback(audio_frame, n); //get more data
+        audio_callback(audio_frame, n);
         //16 bit mono -> 32-bit (16 bit r+l)
-        for (int i=n-1; i>=0; i--) {
+        for (int i=n-1; i>=0; i--)
+        {
             int sample = (int)audio_frame[i];
 
             audio_frame[i*2]= (short)sample;
             audio_frame[i*2+1] = (short)sample;
         }
-
         audio_submit(audio_frame, n);
         left-=n;
     }
-#endif
 }
 
 void osd_setsound(void (*playfunc)(void *buffer, int length))
@@ -107,11 +105,10 @@ static void osd_stopsound(void)
 
 static int osd_init_sound(void)
 {
-#if CONFIG_SOUND_ENA
     audio_frame=malloc(4*DEFAULT_FRAGSIZE);
     audio_init(DEFAULT_SAMPLERATE);
-#endif
     audio_callback = NULL;
+    audio_volume_set(get_volume_settings());
 
     return 0;
 }
@@ -195,8 +192,8 @@ static void set_palette(rgb_t *pal)
     for (i = 0; i < 256; i++)
     {
         c=(pal[i].b>>3)+((pal[i].g>>2)<<5)+((pal[i].r>>3)<<11);
-        //myPalette[i]=(c>>8)|((c&0xff)<<8);
-        myPalette[i]=c;
+        myPalette[i]=(c>>8)|((c&0xff)<<8);
+        //myPalette[i]=c;
     }
 
 }
@@ -220,20 +217,79 @@ static void free_write(int num_dirties, rect_t *dirty_rects)
 {
     bmp_destroy(&myBitmap);
 }
-
+/*
 static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
     xQueueSend(vidQueue, &bmp, 0);
     do_audio_frame();
 }
+*/
+
+static uint8_t lcdfb[256 * 240];
+static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
+    if (bmp->line[0] != NULL)
+    {
+        memcpy(lcdfb, bmp->line[0], 256 * 224);
+
+        void* arg = (void*)lcdfb;
+        xQueueSend(vidQueue, &arg, portMAX_DELAY);
+    }
+}
 
 //This runs on core 1.
+volatile bool exitVideoTaskFlag = false;
 static void videoTask(void *arg) {
     bitmap_t *bmp=NULL;
-    while(1) {
+    while(1)
+    {
+        xQueuePeek(vidQueue, &bmp, portMAX_DELAY);
+
+        if (bmp == 1) break;
+
+        write_nes_frame(bmp);
+
         xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
-        write_nes_frame((const uint8_t **)bmp->line);
-        //ESP_LOGI("DEBUG", "(%s) RAM left %d", __func__ , esp_get_free_heap_size());
     }
+
+    exitVideoTaskFlag = true;
+
+    vTaskDelete(NULL);
+
+    while(1){}
+}
+
+static void SaveState()
+{
+    printf("Saving state.\n");
+
+    save_sram();
+
+    printf("Saving state OK.\n");
+}
+
+static void PowerDown()
+{
+    uint16_t* param = 1;
+
+    // Stop tasks
+    printf("PowerDown: stopping tasks.\n");
+
+    xQueueSend(vidQueue, &param, portMAX_DELAY);
+    while (!exitVideoTaskFlag) { vTaskDelay(1); }
+
+
+    // state
+    printf("PowerDown: Saving state.\n");
+    SaveState();
+
+    // LCD
+    printf("PowerDown: Powerdown LCD panel.\n");
+    display_poweroff();
+
+    printf("PowerDown: Entering deep sleep.\n");
+    system_sleep();
+
+    // Should never reach here
+    abort();
 }
 
 
@@ -243,13 +299,21 @@ static void videoTask(void *arg) {
 
 static void osd_initinput()
 {
-    //gamepad_init();
+    
 }
 
+
 input_gamepad_state previous_state;
+static bool ignoreMenuButton;
+static ushort powerFrameCount;
 
 static int ConvertGamepadInput()
 {
+    if (ignoreMenuButton)
+    {
+        ignoreMenuButton = previous_state.values[GAMEPAD_INPUT_MENU];
+    }
+
     input_gamepad_state state;
     gamepad_read(&state);
 
@@ -291,9 +355,42 @@ static int ConvertGamepadInput()
     if (!state.values[GAMEPAD_INPUT_DOWN])
         result |= (1 << 6);
 
-    if (!previous_state.values[GAMEPAD_INPUT_MENU] && state.values[GAMEPAD_INPUT_MENU])
+    if (!ignoreMenuButton && previous_state.values[GAMEPAD_INPUT_MENU] && state.values[GAMEPAD_INPUT_MENU])
     {
-        audio_terminate();
+        ++powerFrameCount;
+    }
+    else
+    {
+        powerFrameCount = 0;
+    }
+
+    // Note: this will cause an exception on 2nd Core in Debug mode
+    if (powerFrameCount > /*60*/ 30 * 2)
+    {
+        PowerDown();
+    }
+
+    if (!ignoreMenuButton && previous_state.values[GAMEPAD_INPUT_MENU] && !state.values[GAMEPAD_INPUT_MENU])
+    {
+        printf("Stopping video queue.\n");
+
+        void* arg = 1;
+        xQueueSend(vidQueue, &arg, portMAX_DELAY);
+        while(exitVideoTaskFlag)
+        {
+             vTaskDelay(10);
+        }
+
+        //odroid_display_drain_spi();
+
+        SaveState();
+
+
+        // Set menu application
+        set_menu_flag_settings(1);
+
+
+        // Reset
         esp_restart();
     }
 

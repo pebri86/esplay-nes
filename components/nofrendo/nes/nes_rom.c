@@ -3,14 +3,14 @@
 **
 **
 ** This program is free software; you can redistribute it and/or
-** modify it under the terms of version 2 of the GNU Library General 
+** modify it under the terms of version 2 of the GNU Library General
 ** Public License as published by the Free Software Foundation.
 **
-** This program is distributed in the hope that it will be useful, 
+** This program is distributed in the hope that it will be useful,
 ** but WITHOUT ANY WARRANTY; without even the implied warranty of
-** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU 
-** Library General Public License for more details.  To obtain a 
-** copy of the GNU Library General Public License, write to the Free 
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+** Library General Public License for more details.  To obtain a
+** copy of the GNU Library General Public License, write to the Free
 ** Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 **
 ** Any permitted reproduction of these routines, in whole or in part,
@@ -24,6 +24,7 @@
 */
 
 /* TODO: make this a generic ROM loading routine */
+#include <stdlib.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -135,8 +136,8 @@ static int rom_allocsram(rominfo_t *rominfo)
    rominfo->sram = malloc(SRAM_BANK_LENGTH * rominfo->sram_banks);
    if (NULL == rominfo->sram)
    {
-      gui_sendmsg(GUI_RED, "Could not allocate space for battery RAM");
-      return -1;
+      printf("Could not allocate space for battery RAM");
+      abort(); //return -1;
    }
 
    /* make damn sure SRAM is clear */
@@ -199,8 +200,8 @@ static int rom_loadrom(unsigned char **rom, rominfo_t *rominfo)
       rominfo->vram = malloc(VRAM_LENGTH);
       if (NULL == rominfo->vram)
       {
-         gui_sendmsg(GUI_RED, "Could not allocate space for VRAM");
-         return -1;
+         printf("Could not allocate space for VRAM");
+         abort(); //return -1;
       }
       memset(rominfo->vram, 0, VRAM_LENGTH);
    }
@@ -421,7 +422,7 @@ char *rom_getinfo(rominfo_t *rominfo)
    sprintf(temp, " [%d] %dk/%dk %c", rominfo->mapper_number,
            rominfo->rom_banks * 16, rominfo->vrom_banks * 8,
            (rominfo->mirror == MIRROR_VERT) ? 'V' : 'H');
-   
+
    /* Stick it on there! */
    strncat(info, temp, PATH_MAX - strlen(info));
 
@@ -447,6 +448,9 @@ rominfo_t *rom_load(const char *filename)
 
    memset(rominfo, 0, sizeof(rominfo_t));
 
+   strncpy(rominfo->filename, filename, sizeof(rominfo->filename));
+   printf("rom_load: rominfo->filename='%s'\n", rominfo->filename);
+
    /* Get the header and stick it into rominfo struct */
 	if (rom_getheader(&rom, rominfo))
       goto _fail;
@@ -465,7 +469,7 @@ rominfo_t *rom_load(const char *filename)
    if (rom_allocsram(rominfo))
       goto _fail;
 
-      rom_loadtrainer(&rom, rominfo);
+   rom_loadtrainer(&rom, rominfo);
 
 	if (rom_loadrom(&rom, rominfo))
       goto _fail;
