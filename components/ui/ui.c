@@ -45,12 +45,9 @@ static void create_footer();
 static void create_list_page(lv_obj_t * parent);
 static lv_res_t slider_action(lv_obj_t *slider);
 static lv_res_t vol_slider_action(lv_obj_t *slider);
-static lv_res_t btn_click_action(lv_obj_t *btn);
 static void create_settings_page(lv_obj_t *parent);
 static void ui_task(void *arg);
 static void lv_task(void *arg);
-static void copy_rom_task(void *arg);
-static void flash_rom(const char* fullPath);
 static lv_res_t tab_load_callback(lv_obj_t * tab, uint16_t act_id);
 static void check_battery(lv_obj_t* battery_label);
 static void set_volume_icon();
@@ -68,7 +65,6 @@ static lv_obj_t *footer;
 static lv_obj_t *list;
 static lv_obj_t *slider;
 static lv_obj_t *vol_slider;
-static lv_obj_t *btn1;
 static lv_obj_t *tv;
 static lv_obj_t *tab1;
 static lv_obj_t *tab2;
@@ -178,26 +174,9 @@ void ui_create(void)
     create_settings_page(tab2);
 }
 
-int ui_choose_rom()
-{
-    return get_menu_selected();
-}
-
 /**********************
  *   STATIC FUNCTIONS
  **********************/
-static void copy_rom_task(void *arg)
-{
-    printf("copy_rom_task started.\n");
-    vTaskDelay(500);
-    set_rom_name_settings(fullPath);
-    set_menu_flag_settings(0);
-
-    // Restart device
-    esp_restart();
-    vTaskDelete(NULL);
-}
-
 static void lv_task(void *arg)
 {
     printf("lv_task started.\n");
@@ -272,10 +251,12 @@ static lv_res_t list_release_action(lv_obj_t * btn)
     strcat(fullPath, "/");
     strcat(fullPath, label);
 
-    lv_obj_t * mbox2 = lv_mbox_create(lv_scr_act(), NULL);
-    lv_mbox_set_text(mbox2, "Loading ROM, Please wait...");
+    set_rom_name_settings(fullPath);
+    set_menu_flag_settings(0);
+    free(fullPath);
 
-    xTaskCreate(&copy_rom_task, "copy_rom_task", 1024 * 5, NULL, 5, NULL);
+    // Restart device
+    esp_restart();
 
     return LV_RES_OK;
 }
@@ -393,6 +374,8 @@ static void create_list_page(lv_obj_t * parent)
         //printf("%s\n", files[i]);
     }
 
+    sdcard_files_free(files, fileCount);
+
     lv_group_add_obj(group, list);
     lv_group_focus_obj(list);
 }
@@ -452,9 +435,8 @@ static void create_settings_page(lv_obj_t *parent)
     lv_obj_align(slider, label_brightness, LV_ALIGN_OUT_RIGHT_MID, 17, 0); /*Align to below the chart*/
     lv_slider_set_action(slider, slider_action);
     lv_slider_set_range(slider, 1, 10);
-    int16_t value = (int16_t) (get_backlight_settings() / 10);
+    int value = (int) (get_backlight_settings() / 10);
     lv_slider_set_value(slider, value);
-    slider_action(slider);          /*Simulate a user value set the refresh the chart*/
 
     /*Create slider brightness label*/
     lv_obj_t * label_volume = lv_label_create(parent, NULL); /*First parameters (scr) is the parent*/
@@ -472,18 +454,6 @@ static void create_settings_page(lv_obj_t *parent)
     lv_slider_set_action(vol_slider, vol_slider_action);
     lv_slider_set_range(vol_slider, 0, 4);
     lv_slider_set_value(vol_slider, volume_value);
-    slider_action(vol_slider);          /*Simulate a user value set the refresh the chart*/
-
-    /*Create a save button*/
-    btn1 = lv_btn_create(parent, NULL);
-    lv_cont_set_fit(btn1, true, true); /*Enable resizing horizontally and vertically*/
-    lv_obj_align(btn1, vol_slider, LV_ALIGN_IN_BOTTOM_MID, 0, (LV_VER_RES - slider->coords.y2 - lv_obj_get_height(btn1)) / 2);
-    lv_obj_set_free_num(btn1, 1);   /*Set a unique number for the button*/
-    lv_btn_set_action(btn1, LV_BTN_ACTION_CLICK, btn_click_action);
-
-    /*Add a label to the button*/
-    lv_obj_t * btn1_label = lv_label_create(btn1, NULL);
-    lv_label_set_text(btn1_label, SYMBOL_SAVE " Save");
 }
 
 /**
@@ -493,101 +463,24 @@ static void create_settings_page(lv_obj_t *parent)
  */
 static lv_res_t slider_action(lv_obj_t *slider)
 {
-    int16_t v = lv_slider_get_value(slider);
+    int v = lv_slider_get_value(slider);
     brightness_value = (int)(v * 10);
 
     //set display brightness in percent;
     set_display_brightness(brightness_value);
+    set_backlight_settings((int32_t) brightness_value);
 
     return LV_RES_OK;
 }
 
-static lv_res_t vol_slider_action(lv_obj_t *slider)
+static lv_res_t vol_slider_action(lv_obj_t *vol_slider)
 {
-    int8_t v = lv_slider_get_value(slider);
+    int8_t v = lv_slider_get_value(vol_slider);
     volume_value = (int)(v);
     set_volume_icon();
-    return LV_RES_OK;
-}
-
-static lv_res_t btn_click_action(lv_obj_t *btn)
-{
-    //save display brightness settings;
-    set_backlight_settings((int32_t) brightness_value);
-    //save volume settings;
     set_volume_settings((int8_t) volume_value);
 
-    lv_obj_t * mbox1 = lv_mbox_create(lv_scr_act(), NULL);
-    lv_mbox_set_text(mbox1, "Settings saved!");
-    lv_mbox_start_auto_close(mbox1, 1000);
-
     return LV_RES_OK;
-}
-
-static void flash_rom(const char* fullPath)
-{
-    sdcard_files_free(files, fileCount);
-    esp_err_t ret;
-    
-    ret = sdcard_open(SD_CARD);
-    if (ret != ESP_OK)
-    {
-        printf("Error sdcard\n");
-    }
-    
-    printf("%s: HEAP=%#010x\n", __func__, esp_get_free_heap_size());
-
-    printf("Opening file '%s'.\n", fullPath);
-
-    FILE* file = fopen(fullPath, "rb");
-    if (file == NULL)
-    {
-        printf("%s: File open error", __func__);
-    }
-
-    const int WRITE_BLOCK_SIZE = 256;
-    void* data = malloc(WRITE_BLOCK_SIZE);
-    if (!data)
-    {
-        printf("%s: Data memory error", __func__);
-    }
-
-    fseek(file, 0, SEEK_END);
-    size_t file_size = ftell(file);
-
-    // location to beginning of files
-    fseek(file, 0, SEEK_SET);
-
-    const esp_partition_t* part = esp_partition_find_first(0x40, 1, NULL);
-    if (part == NULL)
-    {
-        printf("esp_partition_find_first failed. (0x40)\n");
-    }
-
-    // erase entire partition
-    ret = esp_partition_erase_range(part, 0, part->size);
-    if (ret != ESP_OK)
-    {
-        printf("sesp_partition_erase_range failed. \n");
-    }
-
-    const size_t FLASH_START_ADDRESS = part->address;
-    printf("%s: FLASH_START_ADDRESS=%#010x\n", __func__, FLASH_START_ADDRESS);
-
-    size_t curren_flash_address = FLASH_START_ADDRESS;
-
-    for(size_t i = 0; i<file_size; i+=WRITE_BLOCK_SIZE)
-    {
-        fseek(file, i, SEEK_SET);
-        fread(data, WRITE_BLOCK_SIZE+1, 1, file);
-        ret = spi_flash_write(curren_flash_address + i, data, WRITE_BLOCK_SIZE);
-        if (ret != ESP_OK)
-        {
-            printf("spi_flash_write failed. address=%#08x\n", curren_flash_address + i);
-        }
-    }
-    printf("Flash done.\n");
-    close(file);
 }
 
 static lv_res_t tab_load_callback(lv_obj_t * tab, uint16_t act_id)
@@ -599,13 +492,11 @@ static lv_res_t tab_load_callback(lv_obj_t * tab, uint16_t act_id)
             /* Remove other tabs from group */
             lv_group_remove_obj(slider);
             lv_group_remove_obj(vol_slider);
-            lv_group_remove_obj(btn1);
             break;
 
         case 1:             
             lv_group_add_obj(group, slider); // Add active tab contant to group
             lv_group_add_obj(group, vol_slider); // Add active tab contant to group
-            lv_group_add_obj(group, btn1);
             /* Remove other tabs from group */
             lv_group_remove_obj(list);
             break;

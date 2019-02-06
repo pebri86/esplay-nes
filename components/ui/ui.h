@@ -29,7 +29,6 @@ extern "C" {
  **********************/
  void ui_init(void);
  void ui_create(void);
- int ui_choose_rom();
 
 /**********************
  *      MACROS

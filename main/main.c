@@ -79,6 +79,9 @@ int app_main(void)
 
     set_display_brightness(get_backlight_settings());
 
+    display_show_splash();
+    vTaskDelay(1000);
+
     // ui init
     if(!gpio_get_level(MENU) || get_menu_flag_settings() == 1)
     {
@@ -124,6 +127,8 @@ int app_main(void)
             abort();
         }
 
+        display_clear(0);
+        display_show_hourglass();
         size_t fileSize = sdcard_copy_file_to_memory(romPath, ROM_DATA);
         printf("app_main: fileSize=%d\n", fileSize);
         if (fileSize == 0)
